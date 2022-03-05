@@ -1,8 +1,35 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
+/// @title the interface for the sport event oracle
+/// @notice Declares the functions that the `BetOracle` contract exposes externally
 interface ISportOracle {
     
+    /// @notice The possible outcome for an event
+    enum EventOutcome {
+        Pending,    //match has not been fought to decision
+        Underway,   //match has started & is underway
+        Decided     //match has been finally Decided 
+    }
+
+    // check if event exists
+    function eventExists(bytes32 _eventId)
+        external view returns (bool);
+    
+    // get all pending events
+    function getPredictableEvents() 
+        external view returns (bytes32[] memory);
+
+    // get an event info
+    function getEvent(bytes32 _eventId) 
+        external view returns (
+            bytes32       id,
+            string memory teamA, 
+            string memory teamB,
+            uint          startTimestamp, 
+            EventOutcome  outcome, 
+            string memory realTeamAScore,
+            string memory realTeamBScore
+        );
 }
+
