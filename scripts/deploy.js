@@ -15,19 +15,25 @@ async function main() {
 
   // We get the contract to deploy
   const SportPrediction = await hre.ethers.getContractFactory("SportPrediction");
-  const TestCRP = await hre.ethers.getContractFactory("TestCRP"); 
-  const testCRP = await TestCRP.deploy();
-  const sportPrediction = await SportPrediction.deploy(testCRP.address);
-
+  const SportOracle = await hre.ethers.getContractFactory("SportOracle");
+  const sportOracle = await SportOracle.deploy();
+  const sportPrediction = await SportPrediction.deploy();
+  await sportOracle.deployed();
   await sportPrediction.deployed();
 
-  let txn = await sportPrediction.addSportEvent('psg','lyon',1647429340);
+  let txn = await sportOracle.addSportEvent('psg','lyon',1647429340);
   await txn.wait();
 
-  txn  =  await sportPrediction.eventExists('0xae4eb1856affa86b1ac3b0870b40ce485647885ab20b46f9cf505b63190417e2');
+  let eventId  =  await sportOracle.getPendingEvents();
+  txn  =  await sportPrediction.setOracleAddress(sportOracle.address);
+  txn  =  await sportPrediction.predict(eventId[0],10,'2','1');
 
+  txn  =  await sportPrediction.userPredictStatus('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',eventId[0]);
+  let declare  =  await sportOracle.declareOutcome(eventId[0],2,'2','1');
+  declare  =  await sportPrediction.userPredictStatus('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',eventId[0]);
 
   console.log(txn);
+  console.log(declare);
 
 }
 

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 /// @title the interface for the sport event oracle
-/// @notice Declares the functions that the `BetOracle` contract exposes externally
-interface ISportOracle {
+/// @notice Declares the functions that the `SportOracle` contract exposes externally
+interface ISportPrediction {
     
     /// @notice The possible outcome for an event
     enum EventOutcome {
@@ -17,7 +17,7 @@ interface ISportOracle {
         external view returns (bool);
     
     // get all pending events
-    function getPredictableEvents() 
+    function getPendingEvents() 
         external view returns (bytes32[] memory);
 
     // get an event info
