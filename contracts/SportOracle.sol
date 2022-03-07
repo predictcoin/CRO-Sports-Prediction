@@ -14,6 +14,19 @@ import "hardhat/console.sol";
  */
 contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
 
+    /***
+    * @dev defines a sport event along with its outcome
+    */
+    struct SportEvent {
+        bytes32      id;
+        string       teamA;
+        string       teamB;
+        uint         startTimestamp;
+        EventOutcome outcome;
+        string       realTeamAScore;
+        string       realTeamBScore;
+    }
+
     /**
     * @dev all the sport events
     */
@@ -24,20 +37,6 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
     */
     mapping(bytes32 => uint) private eventIdToIndex;
 
-    
-
-    /***
-      * @dev defines a sport event along with its outcome
-      */
-    struct SportEvent {
-        bytes32      id;
-        string       teamA;
-        string       teamB;
-        uint         startTimestamp;
-        EventOutcome outcome;
-        string       realTeamAScore;
-        string       realTeamBScore;
-    }
 
     /**
      * @dev Triggered once an event has been added
@@ -69,14 +68,14 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
     {
         require(
             _startTimestamp >= block.timestamp + 1 days,
-            "Time must be >= 1 day from now"
+            "SportOracle: Time must be >= 1 day from now"
         );
 
         // Hash key fields of the sport event to get a unique id
         bytes32 eventId = keccak256(abi.encodePacked(_teamA, _teamB, _startTimestamp));
 
         // Make sure that the sport event is unique and does not exist yet
-        require( !eventExists(eventId), "Event already exists");
+        require( !eventExists(eventId), "SportOracle: Event already exists");
 
         // Add the sport event
         events.push( SportEvent(eventId, _teamA, _teamB, _startTimestamp, EventOutcome.Pending, "",""));
@@ -109,7 +108,7 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
         returns (uint)
     {
         //check if the event exists
-        require(eventExists(_eventId));
+        require(eventExists(_eventId), "SportOracle: Event does not exist");
 
         return eventIdToIndex[_eventId] - 1;
     }
@@ -144,7 +143,7 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
         onlyOwner external
     {
         // Require that it exists
-        require(eventExists(_eventId));
+        require(eventExists(_eventId), "SportOracle: Event does not exist");
 
         // Get the event
         uint index = _getMatchIndex(_eventId);
@@ -214,19 +213,14 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
         )
     {
         // Get the sport event
-        if (eventExists(_eventId)) {
-            SportEvent storage theMatch = events[_getMatchIndex(_eventId)];
-            return (theMatch.id, 
-            theMatch.teamA, 
-            theMatch.teamB, 
-            theMatch.startTimestamp, 
-            theMatch.outcome,
-            theMatch.realTeamAScore,
-            theMatch.realTeamBScore);
-        }
-        else {
-            revert("Event not found");
-        }
+        SportEvent storage theMatch = events[_getMatchIndex(_eventId)];
+        return (theMatch.id, 
+        theMatch.teamA, 
+        theMatch.teamB, 
+        theMatch.startTimestamp, 
+        theMatch.outcome,
+        theMatch.realTeamAScore,
+        theMatch.realTeamBScore);
     }
 
 }
