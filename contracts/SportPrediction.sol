@@ -51,7 +51,7 @@ contract SportPrediction is Ownable, ReentrancyGuard {
 
 
     /**
-     * @dev Triggered when once a prediction is placed
+     * @dev Emitted when a prediction is placed
      */
     event PredictionPlaced(
         bytes32 _eventId,
@@ -62,15 +62,15 @@ contract SportPrediction is Ownable, ReentrancyGuard {
     );
 
     /**
-    * @dev Sent once the Sport Event Oracle is set
+    * @dev Emitted when the Sport Event Oracle is set
     */
     event OracleAddressSet( address _address);
 
     /**
-     * @dev check that the passed in address is not 0. 
+     * @dev check that the address passed is not 0. 
      */
     modifier notAddress0(address _address) {
-        require(_address != address(0), "Address 0 is not allowed");
+        require(_address != address(0), "SportPrediction: Address 0 is not allowed");
         _;
     }
 
@@ -134,13 +134,12 @@ contract SportPrediction is Ownable, ReentrancyGuard {
         uint _amount, 
         string memory _teamAScore, 
         string memory _teamBScore)
-        public
-        notAddress0(msg.sender) 
+        public 
         nonReentrant
     {
 
         // Make sure this sport event exists 
-        require(sportOracle.eventExists(_eventId), "Specified event not found"); 
+        require(sportOracle.eventExists(_eventId), "SportPrediction: Specified event not found"); 
 
         // add the new prediction
         Prediction[] storage prediction = eventToPredictions[_eventId]; 
@@ -174,7 +173,7 @@ contract SportPrediction is Ownable, ReentrancyGuard {
     {
 
         // Require that it exists
-        require(sportOracle.eventExists(_eventId));
+        require(sportOracle.eventExists(_eventId), "SportPrediction: Event does not exist");
 
         ( 
             bytes32       id,
@@ -192,8 +191,10 @@ contract SportPrediction is Ownable, ReentrancyGuard {
 
         // Get the count of predictions
         for (uint i = 0; i < predictions.length; i = i + 1) {
-            if (predictions[i].user == _user)
-                userPrediction = predictions[i]; 
+            if (predictions[i].user == _user){
+                userPrediction = predictions[i];
+                break;
+            } 
         }
 
         if((keccak256(bytes(userPrediction.teamAScore))
