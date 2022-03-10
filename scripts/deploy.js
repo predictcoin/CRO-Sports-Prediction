@@ -14,26 +14,28 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  const SportPrediction = await hre.ethers.getContractFactory("SportPrediction");
+  //const SportPrediction = await hre.ethers.getContractFactory("SportPrediction");
   const SportOracle = await hre.ethers.getContractFactory("SportOracle");
   const sportOracle = await SportOracle.deploy();
-  const sportPrediction = await SportPrediction.deploy();
+  //const sportPrediction = await SportPrediction.deploy();
   await sportOracle.deployed();
-  await sportPrediction.deployed();
+  //await sportPrediction.deployed();
 
-  let txn = await sportOracle.addSportEvent('psg','lyon',1647429340);
+  let txn = await sportOracle.addSportEvent('psg','lyon',1647429340,1647429340);
+  txn = await sportOracle.addSportEvent('madrid','lyon',1647429340,1647429340);
+  txn = await sportOracle.addSportEvent('psg','barca',1647429340,1647429340);
+  txn = await sportOracle.addSportEvent('manu','lyon',1647429340,1647429340);
   await txn.wait();
 
-  let eventId  =  await sportOracle.getPendingEvents();
-  txn  =  await sportPrediction.setOracleAddress(sportOracle.address);
-  txn  =  await sportPrediction.predict(eventId[0],10,'2','1');
+  let eventId  =  await sportOracle.getAllEvents(0,2);
+  //txn  =  await sportPrediction.setOracleAddress(sportOracle.address);
+  //txn  =  await sportPrediction.predict(eventId[0],10,'2','1');
 
-  txn  =  await sportPrediction.userPredictStatus('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',eventId[0]);
-  let declare  =  await sportOracle.declareOutcome(eventId[0],2,'2','1');
-  declare  =  await sportPrediction.userPredictStatus('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',eventId[0]);
-
-  console.log(txn);
-  console.log(declare);
+  //txn  =  await sportPrediction.userPredictStatus('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',eventId[0]);
+  //let declare  =  await sportOracle.declareOutcome(eventId[0],2,'2','1');
+  //declare  =  await sportPrediction.userPredictStatus('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',eventId[0]);
+  console.log('SportOracle Deployed to:', sportOracle.address);
+  console.log(eventId);
 
 }
 

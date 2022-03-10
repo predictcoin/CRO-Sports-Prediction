@@ -12,24 +12,39 @@ interface ISportPrediction {
         Decided     //match has been finally Decided 
     }
 
+    /***
+    * @dev defines a sport event along with its outcome
+    */
+    struct SportEvent {
+        bytes32       id;
+        string        teamA; 
+        string        teamB;
+        uint          startTimestamp; 
+        uint          endTimestamp;
+        EventOutcome  outcome;
+        int8          realTeamAScore;
+        int8          realTeamBScore;
+    }
+    
+
     // check if event exists
     function eventExists(bytes32 _eventId)
         external view returns (bool);
     
     // get all pending events
     function getPendingEvents() 
-        external view returns (bytes32[] memory);
+        external view returns (SportEvent[] memory);
 
-    // get an event info
-    function getEvent(bytes32 _eventId) 
-        external view returns (
-            bytes32       id,
-            string memory teamA, 
-            string memory teamB,
-            uint          startTimestamp, 
-            EventOutcome  outcome, 
-            string memory realTeamAScore,
-            string memory realTeamBScore
-        );
+    // get events using eventids
+    function getEvents(bytes32[] memory eventIds) 
+        external view returns (SportEvent[] memory);
+
+    // get events using indexes
+    function getIndexedEvents(uint[] memory indexes) 
+        external view returns (SportEvent[] memory);
+
+    // get all events
+    function getAllEvents(uint cursor, uint length) 
+        external view returns (SportEvent[] memory);
 }
 
