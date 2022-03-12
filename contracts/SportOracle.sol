@@ -220,12 +220,38 @@ contract SportOracle is ISportPrediction, Ownable {
         return output;
     }
 
+    /**
+     * @notice gets the specified sport event and return its data
+     * @param eventIds array of event index 
+     * @return array of all events
+     */
     function getEvents(bytes32[] memory eventIds)
         public view override
         returns (ISportPrediction.SportEvent[] memory)
     {  
+        uint count = eventIds.length; 
+        ISportPrediction.SportEvent[] memory output = 
+            new ISportPrediction.SportEvent[](count);
+
+        if(count > 0){
+            uint index = 0;
+            for (uint n = 0;  n < count;  n = n + 1) {
+                uint eventIndex = _getMatchIndex(eventIds[n]);
+                output[index] = events[eventIndex];
+                index = index + 1;
+            }
+        }
+        
+        return output;
     }
 
+
+    /**
+     * @notice gets the specified sport event and return its data
+     * @param cursor index start from in events array 
+     * @param length length of events array to return
+     * @return array of all events
+     */
     function getAllEvents(uint cursor, uint length) 
         public view override 
         returns (SportEvent[] memory)
