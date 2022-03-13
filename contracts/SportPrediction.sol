@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/ISportPrediction.sol";
 import "hardhat/console.sol";
 
@@ -14,9 +17,11 @@ import "hardhat/console.sol";
  * @notice Takes predictions and handles payouts for sport events
  * @title  a Smart-Contract in charge of handling predictions on a sport events.
  */
-contract SportPrediction is Ownable {
+contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
-    IERC20 public crp;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
+    IERC20Upgradeable public crp;
 
     /** 
     * @dev Address of the sport events Oracle
@@ -89,16 +94,31 @@ contract SportPrediction is Ownable {
         _;
     }
 
-    constructor(
+    
+    /**
+     * @notice Contract constructor
+     * @param _oracleAddress oracle contract address
+     * @param _crp CRP token address
+     * @param _predictAmount predict amount
+     */
+    function initialize(
         address _oracleAddress,
-        IERC20 _crp,
+        address _crp,
         uint _predictAmount
-        ){
+        )public initializer{
+            __Ownable_init();
+
             oracleAddress = _oracleAddress;
             sportOracle = ISportPrediction(_oracleAddress);
-            crp = _crp;
+            crp = IERC20Upgradeable(_crp);
             predictAmount = _predictAmount;
     }
+
+    /**
+     * @notice Authorizes upgrade allowed to only proxy 
+     * @param newImplementation the address of the new implementation contract 
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner{}
 
     /**
      * @notice sets the address of the sport event oracle contract to use 
@@ -122,6 +142,7 @@ contract SportPrediction is Ownable {
     function setPredictAmount(uint _predictAmount)
         external onlyOwner
     {
+        require(_predictAmount > 0, "SportPrediction: Predict Amount should be greater than 0");
         predictAmount = _predictAmount;
         emit PredictAmountSet(_predictAmount);
     }
@@ -180,7 +201,7 @@ contract SportPrediction is Ownable {
 
         // add new prediction
         uint _amount = predictAmount;
-        crp.transferFrom(msg.sender, address(this), _amount);
+        crp.safeTransferFrom(msg.sender, address(this), _amount);
         Prediction[] storage prediction = eventToPredictions[_eventId]; 
         prediction.push( Prediction(msg.sender, _eventId, _amount, _teamAScore, _teamBScore, true)); 
 

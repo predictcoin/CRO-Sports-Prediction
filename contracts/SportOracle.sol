@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/ISportPrediction.sol";
 import "hardhat/console.sol";
 
@@ -13,7 +14,7 @@ import "hardhat/console.sol";
  * communicate their results when asked for.
  * @notice Collects and provides information on sport events and their outcomes
  */
-contract SportOracle is ISportPrediction, Ownable {
+contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /**
     * @dev all the sport events
@@ -39,6 +40,22 @@ contract SportOracle is ISportPrediction, Ownable {
         int8         _realTeamAScore,
         int8         _realTeamBScore
     );
+
+
+    /**
+     * @notice Contract constructor
+     */
+    function initialize()public initializer{
+        __Ownable_init();
+
+    }
+
+
+    /**
+     * @notice Authorizes upgrade allowed to only proxy 
+     * @param newImplementation the address of the new implementation contract 
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner{}
 
     /**
      * @notice Add a new pending sport event into the blockchain
