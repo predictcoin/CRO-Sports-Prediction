@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/ISportPrediction.sol";
 import "hardhat/console.sol";
 
@@ -17,7 +18,7 @@ import "hardhat/console.sol";
  * @notice Takes predictions and handles payouts for sport events
  * @title  a Smart-Contract in charge of handling predictions on a sport events.
  */
-contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -190,7 +191,7 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         bytes32 _eventId,
         int8 _teamAScore, 
         int8 _teamBScore)
-        public 
+        public nonReentrant
     {
 
         // Make sure this sport event exists 

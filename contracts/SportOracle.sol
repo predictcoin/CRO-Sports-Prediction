@@ -15,6 +15,11 @@ import "hardhat/console.sol";
  * @notice Collects and provides information on sport events and their outcomes
  */
 contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, OwnableUpgradeable {
+   
+    /** 
+    * @dev Address of the admin
+    */
+     address public adminAddress;
 
     /**
     * @dev all the sport events
@@ -41,13 +46,35 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         int8         _realTeamBScore
     );
 
+    /**
+    * @dev Emitted when the Admin Address is set
+    */
+    event AdminAddressSet( address _address);
+
+
+    /**
+     * @dev check that the address passed is not 0. 
+     */
+    modifier onlyAdmin() {
+        require(msg.sender == adminAddress , "SportOracle: Not an Admin");
+        _;
+    }
+
+    /**
+     * @dev check that the address passed is not 0. 
+     */
+    modifier notAddress0(address _address) {
+        require(_address != address(0), "SportPrediction: Address 0 is not allowed");
+        _;
+    }
+
 
     /**
      * @notice Contract constructor
      */
-    function initialize()public initializer{
+    function initialize(address _adminAddress)public initializer{
         __Ownable_init();
-
+        adminAddress = _adminAddress;
     }
 
 
@@ -56,6 +83,18 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
      * @param newImplementation the address of the new implementation contract 
      */
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner{}
+
+    /**
+     * @notice sets the adminaddress
+     * @param _adminAddress the address of the sport event oracle 
+     */
+    function setAdminAddress(address _adminAddress)
+        external 
+        onlyOwner notAddress0(_adminAddress)
+    {
+        adminAddress = _adminAddress;
+        emit AdminAddressSet(adminAddress);
+    }
 
     /**
      * @notice Add a new pending sport event into the blockchain
@@ -71,7 +110,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         uint          _startTimestamp,
         uint          _endTimestamp
     ) 
-        public onlyOwner returns (bytes32)
+        public onlyAdmin returns (bytes32)
     {
         require(
             _startTimestamp >= block.timestamp + 1 days,
@@ -129,7 +168,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         //check if the event exists
         require(eventExists(_eventId), "SportOracle: Event does not exist");
 
-        return eventIdToIndex[_eventId];
+        return eventIdToIndex[_eventId] - 1;
     }
 
     /**
@@ -145,11 +184,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             return false;
         }
 
-        for (uint i = 0; i < events.length; i = i + 1) {
-            if (events[i].id == _eventId){
-                return true;
-            }
-        }
+        uint index = eventIdToIndex[_eventId];
+        return (index > 0);
     }
 
     /**
@@ -163,7 +199,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         EventOutcome _outcome, 
         int8 _realTeamAScore, 
         int8 _realTeamBScore)
-        onlyOwner external
+        onlyAdmin external
     {
         // Require that it exists
         require(eventExists(_eventId), "SportOracle: Event does not exist");
