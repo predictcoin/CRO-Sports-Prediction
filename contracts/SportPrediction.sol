@@ -266,7 +266,6 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         address _user, 
         bytes32[] memory _eventIds)
         public
-        notAddress0(_user)
         view returns(bool[] memory)
     {
         bool[] memory output = new bool[](_eventIds.length);
