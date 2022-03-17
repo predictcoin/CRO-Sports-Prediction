@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+pragma abicoder v2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/ISportPrediction.sol";
 import "hardhat/console.sol";
 
@@ -12,25 +14,17 @@ import "hardhat/console.sol";
  * communicate their results when asked for.
  * @notice Collects and provides information on sport events and their outcomes
  */
-contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
-
-    /***
-    * @dev defines a sport event along with its outcome
+contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, OwnableUpgradeable {
+   
+    /** 
+    * @dev Address of the admin
     */
-    struct SportEvent {
-        bytes32      id;
-        string       teamA;
-        string       teamB;
-        uint         startTimestamp;
-        EventOutcome outcome;
-        string       realTeamAScore;
-        string       realTeamBScore;
-    }
+     address public adminAddress;
 
     /**
     * @dev all the sport events
     */
-    SportEvent[] private events;
+    ISportPrediction.SportEvent[] private events;
 
     /*
     * @dev map of composed {eventId (SHA3 of event key infos) => eventIndex (in events)} pairs
@@ -46,25 +40,77 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
         string       _teamA,
         string       _teamB,
         uint         _startTimestamp,
+        uint         _endTimestamp,
         EventOutcome _eventOutcome,
-        string       _realTeamAScore,
-        string       _realTeamBScore
+        int8         _realTeamAScore,
+        int8         _realTeamBScore
     );
+
+    /**
+    * @dev Emitted when the Admin Address is set
+    */
+    event AdminAddressSet( address _address);
+
+
+    /**
+     * @dev check that the address passed is not 0. 
+     */
+    modifier onlyAdmin() {
+        require(msg.sender == adminAddress , "SportOracle: Not an Admin");
+        _;
+    }
+
+    /**
+     * @dev check that the address passed is not 0. 
+     */
+    modifier notAddress0(address _address) {
+        require(_address != address(0), "SportPrediction: Address 0 is not allowed");
+        _;
+    }
+
+
+    /**
+     * @notice Contract constructor
+     */
+    function initialize(address _adminAddress)public initializer{
+        __Ownable_init();
+        adminAddress = _adminAddress;
+    }
+
+
+    /**
+     * @notice Authorizes upgrade allowed to only proxy 
+     * @param newImplementation the address of the new implementation contract 
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner{}
+
+    /**
+     * @notice sets the adminaddress
+     * @param _adminAddress the address of the sport event oracle 
+     */
+    function setAdminAddress(address _adminAddress)
+        external 
+        onlyOwner notAddress0(_adminAddress)
+    {
+        adminAddress = _adminAddress;
+        emit AdminAddressSet(adminAddress);
+    }
 
     /**
      * @notice Add a new pending sport event into the blockchain
      * @param _teamA descriptive teamA for the sport event
      * @param _teamB descriptive teamB for the sport event
      * @param _startTimestamp _startTimestamp set for the sport event
-     * @return the unique id of the newly created sport event
+     * @param _endTimestamp _endTimestamp set for the sport event
+     * @return eventId unique id of the newly created sport event
      */
     function addSportEvent(
         string memory _teamA,
         string memory _teamB,
-        uint          _startTimestamp
+        uint          _startTimestamp,
+        uint          _endTimestamp
     ) 
-        public onlyOwner nonReentrant
-        returns (bytes32)
+        public onlyAdmin returns (bytes32)
     {
         require(
             _startTimestamp >= block.timestamp + 1 days,
@@ -72,24 +118,36 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
         );
 
         // Hash key fields of the sport event to get a unique id
-        bytes32 eventId = keccak256(abi.encodePacked(_teamA, _teamB, _startTimestamp));
+        bytes32 eventId = keccak256(abi.encodePacked(
+            _teamA,
+            _teamB,
+            _startTimestamp,
+            _endTimestamp));
 
         // Make sure that the sport event is unique and does not exist yet
-        require( !eventExists(eventId), "SportOracle: Event already exists");
+        require( !eventExists(eventId)  , "SportOracle: Event already exists");
 
         // Add the sport event
-        events.push( SportEvent(eventId, _teamA, _teamB, _startTimestamp, EventOutcome.Pending, "",""));
+        events.push( ISportPrediction.SportEvent(
+            eventId, 
+            _teamA, 
+            _teamB, 
+            _startTimestamp,
+            _endTimestamp, 
+            EventOutcome.Pending, 
+            -1, -1));
         uint newIndex = events.length - 1;
-        eventIdToIndex[eventId] = newIndex + 1;
+        eventIdToIndex[eventId] = newIndex;
 
         emit SportEventAdded(
             eventId,
             _teamA,
             _teamB,
             _startTimestamp,
+            _endTimestamp,
             EventOutcome.Pending,
-            "",
-            ""
+            -1,
+            -1
         );
 
         // Return the unique id of the new sport event
@@ -125,6 +183,7 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
         if (events.length == 0) {
             return false;
         }
+
         uint index = eventIdToIndex[_eventId];
         return (index > 0);
     }
@@ -138,9 +197,9 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
      */
     function declareOutcome(bytes32 _eventId, 
         EventOutcome _outcome, 
-        string memory _realTeamAScore, 
-        string memory _realTeamBScore)
-        onlyOwner external
+        int8 _realTeamAScore, 
+        int8 _realTeamBScore)
+        onlyAdmin external
     {
         // Require that it exists
         require(eventExists(_eventId), "SportOracle: Event does not exist");
@@ -158,11 +217,11 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
 
     /**
      * @notice gets the unique ids of all pending events, in reverse chronological order
-     * @return an array of unique pending events ids
+     * @return output array of unique pending events ids
      */
     function getPendingEvents()
         public view override
-        returns (bytes32[] memory)
+        returns (ISportPrediction.SportEvent[] memory)
     {
         uint count = 0;
 
@@ -173,13 +232,14 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
         }
 
         // Collect up all the pending events
-        bytes32[] memory output = new bytes32[](count);
+        ISportPrediction.SportEvent[] memory output = 
+            new ISportPrediction.SportEvent[](count);
 
         if (count > 0) {
             uint index = 0;
             for (uint n = events.length;  n > 0;  n = n - 1) {
                 if (events[n - 1].outcome == EventOutcome.Pending) {
-                    output[index] = events[n - 1].id;
+                    output[index] = events[n - 1];
                     index = index + 1;
                 }
             }
@@ -191,36 +251,76 @@ contract SportOracle is ISportPrediction, Ownable, ReentrancyGuard {
      
     /**
      * @notice gets the specified sport event and return its data
-     * @param _eventId the unique id of the desired event
-     * @return id   the id of the event
-     * @return teamA the teamA of the event
-     * @return teamB a string with the teamA of the event's teamB separated with a pipe symbol ('|')
-     * @return startTimestamp when the event takes place
-     * @return outcome an integer that represents the event outcome
-     * @return realTeamAScore teamA score for the sport event
-     * @return realTeamBScore teamA score for the sport event
+     * @param indexes array of event index 
+     * @return array of all events
      */
-    function getEvent(bytes32 _eventId)
+    function getIndexedEvents(uint[] memory indexes)
         public view override
-        returns (
-            bytes32,
-            string memory,
-            string memory,
-            uint,
-            EventOutcome,
-            string memory,
-            string memory
-        )
+        returns (ISportPrediction.SportEvent[] memory)
+    {   
+        uint count = indexes.length; 
+        ISportPrediction.SportEvent[] memory output = 
+            new ISportPrediction.SportEvent[](count);
+
+        if(count > 0){
+            uint index = 0;
+            for (uint n = 0;  n < count;  n = n + 1) {
+                output[index] = events[indexes[n]];
+                index = index + 1;
+            }
+        }
+        
+        return output;
+    }
+
+    /**
+     * @notice gets the specified sport event and return its data
+     * @param eventIds array of event index 
+     * @return array of all events
+     */
+    function getEvents(bytes32[] memory eventIds)
+        public view override
+        returns (ISportPrediction.SportEvent[] memory)
+    {  
+        uint count = eventIds.length; 
+        ISportPrediction.SportEvent[] memory output = 
+            new ISportPrediction.SportEvent[](count);
+
+        if(count > 0){
+            uint index = 0;
+            for (uint n = 0;  n < count;  n = n + 1) {
+                uint eventIndex = _getMatchIndex(eventIds[n]);
+                output[index] = events[eventIndex];
+                index = index + 1;
+            }
+        }
+        
+        return output;
+    }
+
+
+    /**
+     * @notice gets the specified sport event and return its data
+     * @param cursor index start from in events array 
+     * @param length length of events array to return
+     * @return array of all events
+     */
+    function getAllEvents(uint cursor, uint length) 
+        public view override 
+        returns (SportEvent[] memory)
     {
-        // Get the sport event
-        SportEvent storage theMatch = events[_getMatchIndex(_eventId)];
-        return (theMatch.id, 
-        theMatch.teamA, 
-        theMatch.teamB, 
-        theMatch.startTimestamp, 
-        theMatch.outcome,
-        theMatch.realTeamAScore,
-        theMatch.realTeamBScore);
+        ISportPrediction.SportEvent[] memory output = 
+            new ISportPrediction.SportEvent[](length);
+
+        if(length > 0){
+            uint index = 0;
+            for (uint n = cursor;  n < length;  n = n + 1) {
+                output[index] = events[n];
+                index = index + 1;
+            }
+        }
+        
+        return output;
     }
 
 }

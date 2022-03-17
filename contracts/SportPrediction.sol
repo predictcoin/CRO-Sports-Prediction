@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/ISportPrediction.sol";
 import "hardhat/console.sol";
 
@@ -14,7 +18,11 @@ import "hardhat/console.sol";
  * @notice Takes predictions and handles payouts for sport events
  * @title  a Smart-Contract in charge of handling predictions on a sport events.
  */
-contract SportPrediction is Ownable, ReentrancyGuard {
+contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
+    IERC20Upgradeable public crp;
 
     /** 
     * @dev Address of the sport events Oracle
@@ -25,6 +33,11 @@ contract SportPrediction is Ownable, ReentrancyGuard {
     *  @dev Instance of the sport events Oracle (used to register sport events get their outcome).
     */
     ISportPrediction internal sportOracle;
+
+    /** 
+    * @dev predicting amount
+    */
+    uint public predictAmount;
 
     /** 
      * @dev list of all predictions per player,
@@ -45,8 +58,9 @@ contract SportPrediction is Ownable, ReentrancyGuard {
         address user;          // who placed it
         bytes32 eventId;       // id of the sport event as registered in the Oracle
         uint    amount;        // prediction amount
-        string  teamAScore;    // user predicted score for teamA
-        string  teamBScore;     // user predicted score for teamB
+        int8    teamAScore;    // user predicted score for teamA
+        int8    teamBScore;     // user predicted score for teamB
+        bool    predicted;       // check if user predcited
     }
 
 
@@ -56,9 +70,10 @@ contract SportPrediction is Ownable, ReentrancyGuard {
     event PredictionPlaced(
         bytes32 _eventId,
         address _player,
-        string  _teamAScore,
-        string  _teamBScore, 
-        uint    _amount
+        int8    _teamAScore,
+        int8    _teamBScore, 
+        uint    _amount,
+        bool    _predicted
     );
 
     /**
@@ -67,12 +82,44 @@ contract SportPrediction is Ownable, ReentrancyGuard {
     event OracleAddressSet( address _address);
 
     /**
+    * @dev Emitted when prediction amount is set
+    */
+    event PredictAmountSet( uint _address);
+
+
+    /**
      * @dev check that the address passed is not 0. 
      */
     modifier notAddress0(address _address) {
         require(_address != address(0), "SportPrediction: Address 0 is not allowed");
         _;
     }
+
+    
+    /**
+     * @notice Contract constructor
+     * @param _oracleAddress oracle contract address
+     * @param _crp CRP token address
+     * @param _predictAmount predict amount
+     */
+    function initialize(
+        address _oracleAddress,
+        address _crp,
+        uint _predictAmount
+        )public initializer{
+            __Ownable_init();
+
+            oracleAddress = _oracleAddress;
+            sportOracle = ISportPrediction(_oracleAddress);
+            crp = IERC20Upgradeable(_crp);
+            predictAmount = _predictAmount;
+    }
+
+    /**
+     * @notice Authorizes upgrade allowed to only proxy 
+     * @param newImplementation the address of the new implementation contract 
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner{}
 
     /**
      * @notice sets the address of the sport event oracle contract to use 
@@ -88,39 +135,50 @@ contract SportPrediction is Ownable, ReentrancyGuard {
         emit OracleAddressSet(oracleAddress);
     }
 
+
     /**
-    * @notice gets a list ids of all currently predictable events
+     * @notice sets the prediction amount 
+     * @param _predictAmount the prediction amount 
+     */
+    function setPredictAmount(uint _predictAmount)
+        external onlyOwner
+    {
+        require(_predictAmount > 0, "SportPrediction: Predict Amount should be greater than 0");
+        predictAmount = _predictAmount;
+        emit PredictAmountSet(_predictAmount);
+    }
+
+    /**
+    * @notice gets a list of all currently predictable events
     * @return pendingEvents the list of pending sport events 
     */
     function getPredictableEvents()
-        public view returns (bytes32[] memory pendingEvents)
+        public view returns (ISportPrediction.SportEvent[] memory)
     {
         return sportOracle.getPendingEvents(); 
     }
 
     /**
-     * @notice gets the specified sport event and return its data
-     * @param _eventId the unique id of the desired event
-     * @return id   the id of the event
-     * @return teamA the teamA of the event
-     * @return teamB a string with the teamA of the event's teamB separated with a pipe symbol ('|')
-     * @return startTimestamp when the event takes place
-     * @return outcome an integer that represents the event outcome
-     * @return realTeamAScore teamA score for the sport event
-     * @return realTeamBScore teamA score for the sport event
+     * @notice determines whether or not the user has already predict on the given sport event
+     * @param _user address of a player
+     * @param _eventId id of a event 
+     * @return bool true if user predicted and false if not predicted
      */
-    function getEvent(bytes32 _eventId)
-        public view returns (
-            bytes32,
-            string memory,
-            string memory,
-            uint,
-            ISportPrediction.EventOutcome,
-            string memory,
-            string memory
-        )
+    function _predictIsValid(address _user, bytes32 _eventId)
+        private view returns (bool)
     {
-        return sportOracle.getEvent(_eventId);
+        bytes32[] memory userPredictions = userToPredictions[_user];
+        bool isValid;
+        if (userPredictions.length > 0) {
+            for (uint i = 0; i < userPredictions.length; i = i + 1 ) {
+                if (userPredictions[i] == _eventId ) {
+                    isValid = false;
+                } 
+
+                isValid = false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -130,20 +188,23 @@ contract SportPrediction is Ownable, ReentrancyGuard {
      * @param _teamBScore the predicted score of teamB
      */
     function predict(
-        bytes32 _eventId, 
-        uint _amount, 
-        string memory _teamAScore, 
-        string memory _teamBScore)
-        public 
-        nonReentrant
+        bytes32 _eventId,
+        int8 _teamAScore, 
+        int8 _teamBScore)
+        public nonReentrant
     {
 
         // Make sure this sport event exists 
-        require(sportOracle.eventExists(_eventId), "SportPrediction: Specified event not found"); 
+        require(sportOracle.eventExists(_eventId), "SportPrediction: Specified event not found");
+        // Make sure user predict once
+        require(_predictIsValid(msg.sender, _eventId), "SportPrediction: User can only predict once");
+      
 
-        // add the new prediction
+        // add new prediction
+        uint _amount = predictAmount;
+        crp.safeTransferFrom(msg.sender, address(this), _amount);
         Prediction[] storage prediction = eventToPredictions[_eventId]; 
-        prediction.push( Prediction(msg.sender, _eventId, _amount, _teamAScore, _teamBScore)); 
+        prediction.push( Prediction(msg.sender, _eventId, _amount, _teamAScore, _teamBScore, true)); 
 
         // add the mapping
         bytes32[] storage userPredictions = userToPredictions[msg.sender]; 
@@ -154,57 +215,86 @@ contract SportPrediction is Ownable, ReentrancyGuard {
             msg.sender,    
             _teamAScore,
             _teamBScore, 
-            _amount     
+            _amount,
+            true
         );
     }
 
+
     /**
-     * @notice check the users status on an event if he win or loss 
+     * @notice get the user predictions on events 
      * @param _user  user who made the prediction 
-     * @param _eventId id of the predicted event
+     * @param _eventIds id of the predicted events
+     * @return  bool return array of predicted events
+     */
+    function getUserPredictions(address _user, bytes32[] memory _eventIds)
+        public
+        view returns(Prediction[] memory)
+    {
+        Prediction[] memory output = new Prediction[](_eventIds.length);
+
+        if(_eventIds.length > 0){
+            uint index = 0;
+            for (uint i = 0;  i < _eventIds.length;  i = i + 1) {
+                Prediction[] memory predictions = eventToPredictions[_eventIds[i]];
+                Prediction memory userPrediction;
+
+                // Get the count of predictions
+                for (uint n = 0; n < predictions.length; n = n + 1) {
+                    if (predictions[n].user == _user){
+                        userPrediction = predictions[n];
+                        break;
+                    } 
+                }
+                output[index] = userPrediction;
+                index = index + 1;
+            }
+        }
+
+        return output;
+
+    }
+
+
+    /**
+     * @notice get the users status on an event if he win or loss 
+     * @param _user  user who made the prediction 
+     * @param _eventIds id of the predicted events
      * @return  bool return true if user win and false when loss
      */
     function userPredictStatus(
         address _user, 
-        bytes32 _eventId)
+        bytes32[] memory _eventIds)
         public
-        notAddress0(_user)
-        view returns(bool)
+        view returns(bool[] memory)
     {
+        bool[] memory output = new bool[](_eventIds.length);
+        uint index = 0;
+        
+        for (uint i = 0; i < _eventIds.length; i = i + 1 ) {
+            ISportPrediction.SportEvent[] memory events =  sportOracle.getEvents(_eventIds);
+            Prediction[] memory userPredictions = getUserPredictions(_user,_eventIds);
+            // Require that event it exists
+            require(sportOracle.eventExists(_eventIds[i]), "SportPrediction: Event does not exist"); 
+            // Require that the event is decided
+            require(events[i].outcome == 
+            ISportPrediction.EventOutcome.Decided, "SportPrediction: Event status not decided");
+            // Make sure user predict in specified event
+            require(userPredictions[i].predicted,"SportPrediction: User does not predict on this event");
 
-        // Require that it exists
-        require(sportOracle.eventExists(_eventId), "SportPrediction: Event does not exist");
+            if((userPredictions[i].teamAScore == events[i].realTeamAScore)
+                && (userPredictions[i].teamBScore == events[i].realTeamBScore)){
+                
+                output[index] = true;
+                index = index + 1;
+            } else{
+                output[index] = false;
+                index = index + 1;
+            }
 
-        ( 
-            bytes32       id,
-            string memory teamA,
-            string memory teamB,
-            uint          startTimestamp,
-            ISportPrediction.EventOutcome  outcome,
-            string memory realTeamAScore,
-            string memory realTeamBScore
-        ) = getEvent(_eventId);
-
-        Prediction[] memory predictions = eventToPredictions[_eventId];
-
-        Prediction memory userPrediction;
-
-        // Get the count of predictions
-        for (uint i = 0; i < predictions.length; i = i + 1) {
-            if (predictions[i].user == _user){
-                userPrediction = predictions[i];
-                break;
-            } 
         }
 
-        if((keccak256(bytes(userPrediction.teamAScore))
-            == keccak256(bytes(realTeamAScore)))
-            && (keccak256(bytes(userPrediction.teamBScore))
-            == keccak256(bytes(realTeamBScore)))){
-                return true;
-        }
-
-        return false;
+        return output;
     }
 
 }
