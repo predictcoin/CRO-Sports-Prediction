@@ -297,4 +297,12 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         return output;
     }
 
+
+    function claim()
+        external
+        view
+    {
+        
+    } 
+
 }
