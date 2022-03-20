@@ -1,14 +1,15 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IBEP20.sol";
+import "./interfaces/ISportPredictionTreasury.sol";
 import "./utils/SafeBEP20.sol"; 
 
 // A Smart-contract that holds the sport prediction funds
-contract SportPredictionTreasury is Ownable{
+contract SportPredictionTreasury is Ownable, ISportPredictionTreasury{
     using SafeBEP20 for IBEP20;
     using SafeERC20 for IERC20;
 
@@ -37,41 +38,41 @@ contract SportPredictionTreasury is Ownable{
         multiplier = _multiplier;
     }
 
-    function setMultiplier(uint _multiplier)external onlyOwner
+    function setMultiplier(uint _multiplier)external  onlyOwner
     {
         require(_multiplier > 0, "SportPredictionTreasury: Multiplier should be greater than 0");
         multiplier = _multiplier;
         emit MultiplierSet(_multiplier);
     }
 
-    function getMultiplier()external view returns(uint)
+    function getMultiplier()public override view returns(uint)
     {
         return multiplier;
     }
 
-    function deposit(uint _amount) external{
+    function deposit(uint _amount) public override{
         require(BNB.balanceOf(msg.sender) > 0,
          "SportPredictionTreasury: user balance should exceed 0");
         BNB.safeTransferFrom(msg.sender, address(this), _amount);
         emit Deposit(msg.sender, _amount);
     }
 
-    function depositToken(address _token, uint _amount) external{
+    function depositToken(address _token, uint _amount) public override{
         token = IERC20(_token);
-        require(token.balanceOf(msg.sender) > 0, 
-        "SportPredictionTreasury: user balance should exceed 0");
+        require(_amount > 0, 
+        "SportPredictionTreasury: can not deposit non-negative value");
         token.safeTransferFrom(msg.sender, address(this), _amount);
         emit Deposit(msg.sender, _amount); 
     }
 
-    function withdraw(uint _amount) external{
+    function withdraw(uint _amount) public override{
         require(BNB.balanceOf(msg.sender) > _amount, 
         "SportPredictionTreasury: user balance should exceed amount given");
         BNB.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount);
     }
 
-    function withdrawToken(address _token, uint _amount) external{
+    function withdrawToken(address _token, uint _amount) public override{
         token = IERC20(_token);
         require(token.balanceOf(msg.sender) > _amount, 
         "SportPredictionTreasury: user balance should exceed amount given");

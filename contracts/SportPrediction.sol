@@ -2,12 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/ISportPrediction.sol";
+import "./interfaces/ISportPredictionTreasury.sol";
 import "hardhat/console.sol";
 
 /** 
@@ -18,11 +17,14 @@ import "hardhat/console.sol";
  * @notice Takes predictions and handles payouts for sport events
  * @title  a Smart-Contract in charge of handling predictions on a sport events.
  */
-contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract SportPrediction is 
+    Initializable, 
+    UUPSUpgradeable, 
+    OwnableUpgradeable, 
+    ReentrancyGuardUpgradeable{
 
-    using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    IERC20Upgradeable public crp;
+    address internal crp;
 
     /** 
     * @dev Address of the sport events Oracle
@@ -33,6 +35,11 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     *  @dev Instance of the sport events Oracle (used to register sport events get their outcome).
     */
     ISportPrediction internal sportOracle;
+
+    /**
+    *  @dev Instance of the sport prediction treasury (used to handle sport prediction funds).
+    */
+    ISportPredictionTreasury internal treasury;
 
     /** 
     * @dev predicting amount
@@ -51,7 +58,7 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
      */
     mapping(bytes32 => Prediction[]) private eventToPredictions;
 
-    /**
+     /**
      * @dev payload of a prediction on a sport event
      */
     struct Prediction {
@@ -61,6 +68,8 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         int8    teamAScore;    // user predicted score for teamA
         int8    teamBScore;     // user predicted score for teamB
         bool    predicted;       // check if user predcited
+        uint    reward;          // winner's reward
+        bool    claimed;        // check if user(winner) claimed his/her reward
     }
 
 
@@ -73,7 +82,9 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         int8    _teamAScore,
         int8    _teamBScore, 
         uint    _amount,
-        bool    _predicted
+        bool    _predicted,
+        uint    _reward,
+        bool    _claimed
     );
 
     /**
@@ -85,6 +96,16 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     * @dev Emitted when prediction amount is set
     */
     event PredictAmountSet( uint _address);
+
+    /**
+    * @dev Emitted when the sport prediction treasury is set
+    */
+    event TreasuryAddressSet(address _address);
+
+    /**
+    * @dev Emitted when user is claim reward
+    */
+    event Claim( address user, uint reward);
 
 
     /**
@@ -99,19 +120,22 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     /**
      * @notice Contract constructor
      * @param _oracleAddress oracle contract address
+     * @param _treasuryAddress treasury contract address
      * @param _crp CRP token address
      * @param _predictAmount predict amount
      */
     function initialize(
         address _oracleAddress,
+        address _treasuryAddress,
         address _crp,
         uint _predictAmount
         )public initializer{
             __Ownable_init();
 
             oracleAddress = _oracleAddress;
+            treasury = ISportPredictionTreasury(_treasuryAddress);
             sportOracle = ISportPrediction(_oracleAddress);
-            crp = IERC20Upgradeable(_crp);
+            crp = _crp;
             predictAmount = _predictAmount;
     }
 
@@ -133,6 +157,18 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         oracleAddress = _oracleAddress;
         sportOracle = ISportPrediction(oracleAddress);
         emit OracleAddressSet(oracleAddress);
+    }
+
+    /**
+     * @notice sets the address of the sport prediction treasury contract to use 
+     * @param _treasuryAddress the address of the sport prediction treasury
+     */
+    function setTreasuryAddress(address _treasuryAddress)
+        external 
+        onlyOwner notAddress0(_treasuryAddress)
+    {
+        treasury = ISportPredictionTreasury(_treasuryAddress);
+        emit TreasuryAddressSet(_treasuryAddress);
     }
 
 
@@ -202,9 +238,10 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         // add new prediction
         uint _amount = predictAmount;
-        crp.safeTransferFrom(msg.sender, address(this), _amount);
+        treasury.depositToken(crp, _amount);
         Prediction[] storage prediction = eventToPredictions[_eventId]; 
-        prediction.push( Prediction(msg.sender, _eventId, _amount, _teamAScore, _teamBScore, true)); 
+        prediction.push( Prediction(
+            msg.sender, _eventId, _amount, _teamAScore, _teamBScore, true, 0,false)); 
 
         // add the mapping
         bytes32[] storage userPredictions = userToPredictions[msg.sender]; 
@@ -216,7 +253,9 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             _teamAScore,
             _teamBScore, 
             _amount,
-            true
+            true,
+            0,
+            false
         );
     }
 
@@ -231,7 +270,8 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         public
         view returns(Prediction[] memory)
     {
-        Prediction[] memory output = new Prediction[](_eventIds.length);
+        Prediction[] memory output = 
+            new Prediction[](_eventIds.length);
 
         if(_eventIds.length > 0){
             uint index = 0;
@@ -298,11 +338,13 @@ contract SportPrediction is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     }
 
 
-    function claim()
+    function claim(bytes32 _eventId)
         external
-        view
+        view returns(bool[] memory predictStatuses)
     {
-        
+        bytes32[] memory eventArr;
+        eventArr[0] = _eventId;
+        predictStatuses = userPredictStatus(msg.sender, eventArr); 
     } 
 
 }
