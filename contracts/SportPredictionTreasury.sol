@@ -38,6 +38,10 @@ contract SportPredictionTreasury is Ownable, ISportPredictionTreasury{
         multiplier = _multiplier;
     }
 
+    /**
+     * @notice set the reward multiplier
+     * @param _multiplier the reward multiplier
+     */
     function setMultiplier(uint _multiplier)external  onlyOwner
     {
         require(_multiplier > 0, "SportPredictionTreasury: Multiplier should be greater than 0");
@@ -45,11 +49,20 @@ contract SportPredictionTreasury is Ownable, ISportPredictionTreasury{
         emit MultiplierSet(_multiplier);
     }
 
+
+    /**
+     * @notice get the reward multiplier
+     * @return _multiplier reward multiplier
+     */
     function getMultiplier()public override view returns(uint)
     {
         return multiplier;
     }
 
+    /**
+     * @notice deposit bnb token
+     * @param _amount the deposited amount
+     */
     function deposit(uint _amount) public override{
         require(BNB.balanceOf(msg.sender) > 0,
          "SportPredictionTreasury: user balance should exceed 0");
@@ -57,6 +70,13 @@ contract SportPredictionTreasury is Ownable, ISportPredictionTreasury{
         emit Deposit(msg.sender, _amount);
     }
 
+
+    /**
+     * @notice deposit other token
+     * @param _token the token address
+     * @param _from the sender address
+     * @param _amount the deposited amount
+     */
     function depositToken(address _token, address _from, uint _amount) public override{
         token = IERC20(_token);
         require(token.balanceOf(_from) > _amount, 
@@ -65,11 +85,22 @@ contract SportPredictionTreasury is Ownable, ISportPredictionTreasury{
         emit Deposit(msg.sender, _amount); 
     }
 
+
+    /**
+     * @notice withdraw bnb token
+     * @param _amount the withdrawal amount
+     */
     function withdraw(uint _amount) public override{
         BNB.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount);
     }
 
+    /**
+     * @notice withdraw other token
+     * @param _token the token address
+     * @param _to the spender address
+     * @param _amount the deposited amount
+     */
     function withdrawToken(address _token, address _to, uint _amount) public override{
         token = IERC20(_token);
         token.safeTransfer(_to, _amount);

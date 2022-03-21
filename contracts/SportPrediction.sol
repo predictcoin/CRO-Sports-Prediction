@@ -350,6 +350,10 @@ contract SportPrediction is
     }
 
 
+    /**
+     * @notice claim reward
+     * @param _eventId id of specified event
+     */
     function claim(bytes32 _eventId)
         external
     {
@@ -379,6 +383,11 @@ contract SportPrediction is
 
     } 
 
+
+    /**
+     * @notice Withdraw claimed reward
+     * @param _eventId id of specified event
+     */
     function withdrawReward(bytes32 _eventId)
         external 
         nonReentrant
