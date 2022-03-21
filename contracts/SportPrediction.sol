@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./interfaces/ISportPrediction.sol";
 import "./interfaces/ISportPredictionTreasury.sol";
 import "hardhat/console.sol";
@@ -23,6 +24,7 @@ contract SportPrediction is
     OwnableUpgradeable, 
     ReentrancyGuardUpgradeable{
 
+    using SafeMathUpgradeable for uint;
 
     address internal crp;
 
@@ -35,6 +37,11 @@ contract SportPrediction is
     *  @dev Instance of the sport events Oracle (used to register sport events get their outcome).
     */
     ISportPrediction internal sportOracle;
+
+    /** 
+    * @dev Address of the sport prediction treasury
+    */
+    address internal treasuryAddress;
 
     /**
     *  @dev Instance of the sport prediction treasury (used to handle sport prediction funds).
@@ -70,6 +77,7 @@ contract SportPrediction is
         bool    predicted;       // check if user predcited
         uint    reward;          // winner's reward
         bool    claimed;        // check if user(winner) claimed his/her reward
+        bool    rewarded;       // check if user(winner) withdrawn his/her reward
     }
 
 
@@ -84,7 +92,8 @@ contract SportPrediction is
         uint    _amount,
         bool    _predicted,
         uint    _reward,
-        bool    _claimed
+        bool    _claimed,
+        bool    _rewarded
     );
 
     /**
@@ -133,8 +142,9 @@ contract SportPrediction is
             __Ownable_init();
 
             oracleAddress = _oracleAddress;
-            treasury = ISportPredictionTreasury(_treasuryAddress);
+            treasuryAddress = _treasuryAddress;
             sportOracle = ISportPrediction(_oracleAddress);
+            treasury = ISportPredictionTreasury(_treasuryAddress);
             crp = _crp;
             predictAmount = _predictAmount;
     }
@@ -167,8 +177,9 @@ contract SportPrediction is
         external 
         onlyOwner notAddress0(_treasuryAddress)
     {
-        treasury = ISportPredictionTreasury(_treasuryAddress);
-        emit TreasuryAddressSet(_treasuryAddress);
+        treasuryAddress = _treasuryAddress;
+        treasury = ISportPredictionTreasury(treasuryAddress);
+        emit TreasuryAddressSet(treasuryAddress);
     }
 
 
@@ -238,10 +249,10 @@ contract SportPrediction is
 
         // add new prediction
         uint _amount = predictAmount;
-        treasury.depositToken(crp, _amount);
+        treasury.depositToken(crp, msg.sender, _amount);
         Prediction[] storage prediction = eventToPredictions[_eventId]; 
         prediction.push( Prediction(
-            msg.sender, _eventId, _amount, _teamAScore, _teamBScore, true, 0,false)); 
+            msg.sender, _eventId, _amount, _teamAScore, _teamBScore, true, 0,false,false)); 
 
         // add the mapping
         bytes32[] storage userPredictions = userToPredictions[msg.sender]; 
@@ -255,6 +266,7 @@ contract SportPrediction is
             _amount,
             true,
             0,
+            false,
             false
         );
     }
@@ -314,7 +326,7 @@ contract SportPrediction is
         for (uint i = 0; i < _eventIds.length; i = i + 1 ) {
             ISportPrediction.SportEvent[] memory events =  sportOracle.getEvents(_eventIds);
             Prediction[] memory userPredictions = getUserPredictions(_user,_eventIds);
-            // Require that event it exists
+            // Require that event id exists
             require(sportOracle.eventExists(_eventIds[i]), "SportPrediction: Event does not exist"); 
             // Require that the event is decided
             require(events[i].outcome == 
@@ -340,11 +352,68 @@ contract SportPrediction is
 
     function claim(bytes32 _eventId)
         external
-        view returns(bool[] memory predictStatuses)
     {
-        bytes32[] memory eventArr;
+        bytes32[] memory eventArr = new bytes32[](1); 
         eventArr[0] = _eventId;
-        predictStatuses = userPredictStatus(msg.sender, eventArr); 
+
+        require(userPredictStatus(msg.sender,eventArr)[0],
+        "SportPrediction: Only Winner can claim reward");
+
+        uint index;
+
+        Prediction[] storage predictions = eventToPredictions[_eventId];
+
+        // Get the count of predictions
+        for (uint n = 0; n < predictions.length; n = n + 1) {
+            if (predictions[n].user == msg.sender){
+                index = n;
+                break;
+            } 
+        }
+
+        Prediction storage userPrediction = predictions[index];
+        userPrediction.claimed = true;
+        userPrediction.reward = predictAmount.mul(treasury.getMultiplier());
+
+        emit Claim(msg.sender, predictAmount);
+
     } 
+
+    function withdrawReward(bytes32 _eventId)
+        external 
+        nonReentrant
+    {
+        bytes32[] memory eventArr = new bytes32[](1); 
+        eventArr[0] = _eventId;
+
+        // Require that event id exists
+        require(sportOracle.eventExists(_eventId), "SportPrediction: Event does not exist");
+
+        uint index;
+
+        Prediction[] storage predictions = eventToPredictions[_eventId];
+
+        // Get the count of predictions
+        for (uint n = 0; n < predictions.length; n = n + 1) {
+            if (predictions[n].user == msg.sender){
+                index = n;
+                break;
+            } 
+        }
+
+        Prediction storage userPrediction = predictions[index];
+
+        // require that winner haven't withdraw reward
+        require(!userPrediction.rewarded,
+        "SportPrediction: Only winner that heven't withdraw reward is allow");
+
+        // require that winner have claimed reward
+        require(userPrediction.claimed,
+        "SportPrediction: Only winner that claimed reward is allow");
+
+        userPrediction.rewarded = true;
+        uint amount = userPrediction.reward;
+        treasury.withdrawToken(crp, msg.sender, amount);
+    }
 
 }

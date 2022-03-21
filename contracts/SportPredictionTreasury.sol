@@ -17,7 +17,7 @@ contract SportPredictionTreasury is Ownable, ISportPredictionTreasury{
     IBEP20 internal BNB;
 
     // other ERC20 token address
-    IERC20 internal token;
+    IERC20 internal token; 
 
     // reward multiplier for winner
     uint internal multiplier;
@@ -57,27 +57,23 @@ contract SportPredictionTreasury is Ownable, ISportPredictionTreasury{
         emit Deposit(msg.sender, _amount);
     }
 
-    function depositToken(address _token, uint _amount) public override{
+    function depositToken(address _token, address _from, uint _amount) public override{
         token = IERC20(_token);
-        require(_amount > 0, 
-        "SportPredictionTreasury: can not deposit non-negative value");
-        token.safeTransferFrom(msg.sender, address(this), _amount);
+        require(token.balanceOf(_from) > _amount, 
+        "SportPredictionTreasury: user balance should exceed amount given");
+        token.safeTransferFrom(_from, address(this), _amount);
         emit Deposit(msg.sender, _amount); 
     }
 
     function withdraw(uint _amount) public override{
-        require(BNB.balanceOf(msg.sender) > _amount, 
-        "SportPredictionTreasury: user balance should exceed amount given");
         BNB.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount);
     }
 
-    function withdrawToken(address _token, uint _amount) public override{
+    function withdrawToken(address _token, address _to, uint _amount) public override{
         token = IERC20(_token);
-        require(token.balanceOf(msg.sender) > _amount, 
-        "SportPredictionTreasury: user balance should exceed amount given");
-        token.safeTransfer(msg.sender, _amount);
-        emit Withdraw(msg.sender, _amount);
+        token.safeTransfer(_to, _amount);
+        emit Withdraw(_to, _amount);
     }
     
 }

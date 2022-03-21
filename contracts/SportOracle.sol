@@ -137,7 +137,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             EventOutcome.Pending, 
             -1, -1));
         uint newIndex = events.length - 1;
-        eventIdToIndex[eventId] = newIndex;
+        eventIdToIndex[eventId] = newIndex + 1;
 
         emit SportEventAdded(
             eventId,
@@ -206,7 +206,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
 
         // Get the event
         uint index = _getMatchIndex(_eventId);
-        SportEvent storage theMatch = events[index];
+        ISportPrediction.SportEvent storage theMatch = events[index];
 
         // Set the outcome
         theMatch.outcome = _outcome;
