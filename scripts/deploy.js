@@ -5,19 +5,18 @@ async function main() {
 
   const adminAddress = process.env.ADMIN_ADDRESS;
   const crpToken = process.env.CRP_TOKEN;
-  const bnbToken = process.env.BNB_TOKEN;
   const SportOracle = await ethers.getContractFactory("SportOracle");
   const SportPrediction = await ethers.getContractFactory("SportPrediction");
   const sportOracle = await upgrades.deployProxy(SportOracle,[adminAddress],{kind:"uups"});
   const SportPredictionTreasury = await ethers.getContractFactory("SportPredictionTreasury");
-  const treasury = await SportPredictionTreasury.deploy(bnbToken,10);
+  const treasury = await SportPredictionTreasury.deploy();
   const sportPrediction = await upgrades.deployProxy(SportPrediction,
     [ sportOracle.address,
       treasury.address,
       crpToken,
-      ethers.utils.parseUnits("100")],
+      ethers.utils.parseUnits("100"),
+      10],
       {kind: "uups"});
-  
 
   console.log(`
     SportOracle deployed to: ${sportOracle.address},
