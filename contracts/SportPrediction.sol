@@ -28,21 +28,16 @@ contract SportPrediction is
 
     address internal crp;
 
-    /** 
-    * @dev Address of the sport events Oracle
-    */
-    address internal oracleAddress;
-
     /**
     *  @dev Instance of the sport events Oracle (used to register sport events get their outcome).
     */
-    ISportPrediction internal sportOracle;
+    ISportPrediction public sportOracle;
 
 
     /**
     *  @dev Instance of the sport prediction treasury (used to handle sport prediction funds).
     */
-    ISportPredictionTreasury internal treasury;
+    ISportPredictionTreasury public treasury;
 
     /** 
     * @dev predicting amount
@@ -138,7 +133,6 @@ contract SportPrediction is
         )public initializer{
             __Ownable_init();
 
-            oracleAddress = _oracleAddress;
             sportOracle = ISportPrediction(_oracleAddress);
             treasury = ISportPredictionTreasury(_treasuryAddress);
             crp = _crp;
@@ -161,9 +155,8 @@ contract SportPrediction is
         external 
         onlyOwner notAddress0(_oracleAddress)
     {
-        oracleAddress = _oracleAddress;
-        sportOracle = ISportPrediction(oracleAddress);
-        emit OracleAddressSet(oracleAddress);
+        sportOracle = ISportPrediction(_oracleAddress);
+        emit OracleAddressSet(_oracleAddress);
     }
 
     /**
@@ -320,27 +313,24 @@ contract SportPrediction is
         view returns(bool[] memory)
     {
         bool[] memory output = new bool[](_eventIds.length);
-        uint index = 0;
+        ISportPrediction.SportEvent[] memory events =  sportOracle.getEvents(_eventIds);
         
         for (uint i = 0; i < _eventIds.length; i = i + 1 ) {
-            ISportPrediction.SportEvent[] memory events =  sportOracle.getEvents(_eventIds);
-            Prediction memory userPrediction = eventToPrediction[_eventIds[i]][_user];
+
             // Require that event id exists
             require(sportOracle.eventExists(_eventIds[i]), "SportPrediction: Event does not exist"); 
             // Require that the event is decided
             require(events[i].outcome == 
             ISportPrediction.EventOutcome.Decided, "SportPrediction: Event status not decided");
-            // Make sure user predict in specified event
-            require(userPrediction.predicted,"SportPrediction: User does not predict on this event");
 
+            Prediction memory userPrediction = eventToPrediction[_eventIds[i]][_user];
+            
             if((userPrediction.teamAScore == events[i].realTeamAScore)
                 && (userPrediction.teamBScore == events[i].realTeamBScore)){
                 
-                output[index] = true;
-                index = index + 1;
+                output[i] = true;
             } else{
-                output[index] = false;
-                index = index + 1;
+                output[i] = false;
             }
 
         }
