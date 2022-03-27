@@ -256,14 +256,15 @@ contract SportPrediction is
         uint _amount = predictAmount;
         treasury.depositToken(crp, msg.sender, _amount);
 
-        Prediction storage prediction =  eventToPrediction[_eventId][msg.sender];
-        prediction.user = msg.sender;
-        prediction.eventId = _eventId;
-        prediction.amount = _amount;
-        prediction.teamAScore = _teamAScore;
-        prediction.teamBScore = _teamBScore;
-        prediction.predicted = true;
-        prediction.claimed = false;
+        eventToPrediction[_eventId][msg.sender] = 
+            Prediction(
+                msg.sender,
+                _eventId,
+                _amount,
+                _teamAScore,
+                _teamBScore,
+                true,
+                false) ;
 
         emit PredictionPlaced(
             _eventId,
