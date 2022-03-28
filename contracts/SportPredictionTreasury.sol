@@ -24,8 +24,9 @@ contract SportPredictionTreasury is Ownable, ISportPredictionTreasury{
      * @notice deposit bnb
      */
     function deposit() public override payable{
-        payable(address(this)).transfer(msg.value);
-        emit Withdraw(msg.sender, msg.value);
+        require(msg.value != 0, 
+        "SportPredictionTreasury: Deposit Amount should be > than 0");
+        emit Deposit(msg.sender, msg.value);
     }
 
 

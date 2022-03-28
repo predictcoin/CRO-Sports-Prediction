@@ -55,6 +55,13 @@ contract SportPrediction is
      */
     mapping(bytes32 => mapping(address => Prediction)) private eventToPrediction;
 
+
+    /**
+     * @dev list of all predictions per player,
+     * ie. a map composed (player address => predictions) pairs
+     */
+    mapping(address => Prediction[]) private userToPredictions;
+
      /**
      * @dev payload of a prediction on a sport event
      */
@@ -62,6 +69,7 @@ contract SportPrediction is
         address user;          // who placed it
         bytes32 eventId;       // id of the sport event as registered in the Oracle
         uint    amount;        // prediction amount
+        uint    reward;        // user reward
         int8    teamAScore;    // user predicted score for teamA
         int8    teamBScore;     // user predicted score for teamB
         bool    predicted;       // check if user predcited  
@@ -78,6 +86,7 @@ contract SportPrediction is
         int8    _teamAScore,
         int8    _teamBScore, 
         uint    _amount,
+        uint    _reward,
         bool    _predicted,
         bool    _claimed
     );
@@ -253,25 +262,29 @@ contract SportPrediction is
       
 
         // add new prediction
-        uint _amount = predictAmount;
-        treasury.depositToken(crp, msg.sender, _amount);
+        treasury.depositToken(crp, msg.sender, predictAmount);
 
         eventToPrediction[_eventId][msg.sender] = 
             Prediction(
                 msg.sender,
                 _eventId,
-                _amount,
+                predictAmount,
+                0,
                 _teamAScore,
                 _teamBScore,
                 true,
                 false) ;
+
+        Prediction[] storage userPredictions = userToPredictions[msg.sender]; 
+        userPredictions.push(eventToPrediction[_eventId][msg.sender]);
 
         emit PredictionPlaced(
             _eventId,
             msg.sender,    
             _teamAScore,
             _teamBScore, 
-            _amount,
+            predictAmount,
+            0,
             true,
             false
         );
@@ -350,7 +363,7 @@ contract SportPrediction is
         bytes32[] memory eventArr = new bytes32[](1); 
         eventArr[0] = _eventId;
 
-        require(userPredictStatus(msg.sender,eventArr)[0],
+        require(userPredictStatus(msg.sender, eventArr)[0],
         "SportPrediction: Only Winner can claim reward");
         require(!eventToPrediction[_eventId][msg.sender].claimed,
         "SportPrediction: Only winner that doesn't claim reward is allow");
@@ -358,8 +371,8 @@ contract SportPrediction is
         
         Prediction storage userPrediction = eventToPrediction[_eventId][msg.sender];
         userPrediction.claimed = true;
-        uint amount = predictAmount.mul(getMultiplier());
-        treasury.withdrawToken(crp, msg.sender, amount);
+        userPrediction.reward = predictAmount.mul(getMultiplier());
+        treasury.withdrawToken(crp, msg.sender, userPrediction.reward);
 
         emit Claim(msg.sender, predictAmount);
 
