@@ -35,7 +35,6 @@ contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
 
     constructor(){
         _setupRole("deployer", msg.sender); 
-        _revokeRole("sportPrediction", sportPrediction);
     }
 
 
@@ -53,6 +52,8 @@ contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
         external 
         onlyRole("deployer")
     {
+
+        _revokeRole("sportPrediction", sportPrediction);
         sportPrediction = _address;
         _grantRole("sportPrediction", sportPrediction);
         emit SportPredictionSet(_address);
