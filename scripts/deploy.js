@@ -17,7 +17,6 @@ async function main() {
       ethers.utils.parseUnits("100"),
       10],
       {kind: "uups"});
-
   
 
   console.log(`
