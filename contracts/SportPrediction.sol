@@ -336,8 +336,9 @@ contract SportPrediction is
             // Require that the event is decided
             require(events[i].outcome == 
             ISportPrediction.EventOutcome.Decided, "SportPrediction: Event status not decided");
-
             Prediction memory userPrediction = eventToPrediction[_eventIds[i]][_user];
+            // Make sure user predict in specified event
+            require(userPrediction.predicted,"SportPrediction: User did not predict on this event");
             
             if((userPrediction.teamAScore == events[i].realTeamAScore)
                 && (userPrediction.teamBScore == events[i].realTeamBScore)){
