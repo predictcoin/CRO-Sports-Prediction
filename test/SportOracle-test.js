@@ -75,7 +75,7 @@ describe('SportOracle Contract Test', () => {
             endTime
         )
 
-        const receipt = await tx.wait();
+        const receipt = await tx.wait()
 
         const expectedEventId = ethers.utils.solidityKeccak256(
             ["string", "string", "uint256", "uint256"],
@@ -116,7 +116,7 @@ describe('SportOracle Contract Test', () => {
         )).to.be.reverted
     })
 
-    it("Should returns false when there is NO event with this id", async function() {
+    it("Should returns false when there is NO event with this id", async ()=> {
         const nonExistentEventId = ethers.utils.solidityKeccak256(
             ["string", "string", "uint256", "uint256"],
             ["Barcelona", 
@@ -130,13 +130,13 @@ describe('SportOracle Contract Test', () => {
             .to.be.false
     })
 
-    it("Should returns true when there is an event with this id", async function() {
+    it("Should returns true when there is an event with this id", async ()=> {
         expect(await sportOracle.eventExists(eventId1)).to.be.true
     })
 
 
 
-    it("Should returns indexed sport events", async function() {
+    it("Should returns indexed sport events", async () => {
         const tx  = await sportOracle.getIndexedEvents([1,0])
         expect(tx[0].id).to.equal(eventId2)
         expect(tx[0].teamA).to.equal(teamA2)
@@ -158,7 +158,7 @@ describe('SportOracle Contract Test', () => {
     })
 
 
-    it("Should returns specified sport events using id", async function() {
+    it("Should returns specified sport events using id", async () => {
         const tx  = await sportOracle.getEvents([eventId2, eventId1])
         expect(tx[0].id).to.equal(eventId2)
         expect(tx[0].teamA).to.equal(teamA2)
@@ -180,7 +180,7 @@ describe('SportOracle Contract Test', () => {
     })
 
 
-    it("Should returns all the sport events", async function() {
+    it("Should returns all the sport events", async () => {
         const tx  = await sportOracle.getAllEvents(0,2)
         expect(tx[0].id).to.equal(eventId1)
         expect(tx[0].teamA).to.equal(teamA1)
@@ -202,7 +202,7 @@ describe('SportOracle Contract Test', () => {
     })
 
 
-    it("Should declare predefined event outcome", async function() {
+    it("Should declare predefined event outcome", async () => {
 
         const outcome = ethers.BigNumber.from(2)
         const realTeamAScore  = ethers.BigNumber.from(3)
@@ -223,7 +223,7 @@ describe('SportOracle Contract Test', () => {
     })
 
 
-    it("Should returns only the pending sport events", async function() {
+    it("Should returns only the pending sport events", async () => {
 
         const outcome = ethers.BigNumber.from(2)
         const realTeamAScore  = ethers.BigNumber.from(3)
