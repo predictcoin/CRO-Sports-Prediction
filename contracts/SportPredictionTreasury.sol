@@ -16,10 +16,7 @@ contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
     //sport prediction address
     address internal sportPrediction;
 
-    // Event triggered once an address deposited in the contract
-    event Deposit(address indexed user, uint amount);
-
-    // Event triggered once an address withdrawn in the contract
+    // Event triggered once an address withdraws from the contract
     event Withdraw(address indexed user, uint amount);
 
     // Emitted when sport prediction address is set
@@ -60,31 +57,6 @@ contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
     }
 
     /**
-     * @notice deposit bnb
-     */
-    function deposit() public override payable{
-        require(msg.value != 0, 
-        "SportPredictionTreasury: Deposit Amount should be > than 0");
-        emit Deposit(msg.sender, msg.value);
-    }
-
-
-    /**
-     * @notice deposit other token
-     * @param _token the token address
-     * @param _from the sender address
-     * @param _amount the deposited amount
-     */
-    function depositToken(address _token, address _from, uint _amount) public override{
-        token = IERC20(_token);
-        require(token.balanceOf(_from) > _amount, 
-        "SportPredictionTreasury: user balance should exceed amount given");
-        token.safeTransferFrom(_from, address(this), _amount);
-        emit Deposit(msg.sender, _amount); 
-    }
-
-
-    /**
      * @notice withdraw bnb
      * @param _amount the withdrawal amount
      */
@@ -106,6 +78,10 @@ contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
         token = IERC20(_token);
         token.safeTransfer(_to, _amount);
         emit Withdraw(_to, _amount);
+    }
+
+    receive () external payable{
+        
     }
     
 }
