@@ -113,8 +113,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         public onlyAdmin returns (bytes32)
     {
         require(
-            _startTimestamp >= block.timestamp + 1 days,
-            "SportOracle: Time must be >= 1 day from now"
+            _startTimestamp >= block.timestamp + 12 hours,
+            "SportOracle: Time must be >= 12 hours from now"
         );
 
         // Hash key fields of the sport event to get a unique id
@@ -122,7 +122,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             _teamA,
             _teamB,
             _startTimestamp,
-            _endTimestamp));
+            _endTimestamp
+        ));
 
         // Make sure that the sport event is unique and does not exist yet
         require( !eventExists(eventId)  , "SportOracle: Event already exists");
@@ -135,7 +136,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             _startTimestamp,
             _endTimestamp, 
             EventOutcome.Pending, 
-            -1, -1));
+            -1, -1
+        ));
         uint newIndex = events.length - 1;
         eventIdToIndex[eventId] = newIndex + 1;
 
