@@ -1,5 +1,5 @@
 const { ethers, waffle } = require('hardhat')
-const { expect, use }       = require('chai')
+const { expect}  = require('chai')
 const { it } = require('mocha')
 
 
@@ -10,13 +10,22 @@ describe('SportPrediction Treasury Contract Test', () => {
     beforeEach(async () => {
         [deployer, user] = await ethers.getSigners()
         provider = waffle.provider;
+        const adminAddress = process.env.ADMIN_ADDRESS
         const CRPToken = await ethers.getContractFactory("CRP")
         token = await CRPToken.deploy()
         const SportPredictionTreasury = 
         await ethers.getContractFactory("SportPredictionTreasury")
         treasury = await SportPredictionTreasury.deploy()
-        const SportPrediction = await ethers.getContractFactory("CRP")
-        sportPrediction = await SportPrediction.deploy()
+        const SportOracle = await ethers.getContractFactory("SportOracle");
+        const sportOracle = await upgrades.deployProxy(SportOracle,[adminAddress],{kind:"uups"});
+        const SportPrediction = await ethers.getContractFactory("SportPrediction")
+        sportPrediction = await upgrades.deployProxy(SportPrediction,
+            [ sportOracle.address,
+              treasury.address,
+              token.address,
+              ethers.utils.parseUnits("100"),
+              10],
+              {kind: "uups"});
     })
 
     it('Should returns true if account is authorised', async() => {

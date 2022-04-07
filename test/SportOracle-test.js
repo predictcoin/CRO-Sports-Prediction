@@ -1,6 +1,6 @@
 const { ethers, upgrades } = require('hardhat')
-const { expect }       = require('chai')
-const { DateTime }     = require('luxon')
+const { expect } = require('chai')
+const { DateTime } = require('luxon')
 const { it } = require('mocha')
 
 
@@ -60,6 +60,10 @@ describe('SportOracle Contract Test', () => {
     it('Should update admin address', async() => {
         await sportOracle.setAdminAddress(deployer.getAddress())
         expect(await sportOracle.adminAddress()).to.equal(await deployer.getAddress())
+    })
+
+    it('Should allow only owner to update admin address', async() => {
+        expect(sportOracle.connect(user).setAdminAddress(deployer.getAddress())).to.be.reverted
     })
 
     it('Should add a new sport event', async() => {
