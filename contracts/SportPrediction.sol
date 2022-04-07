@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ISportPrediction.sol";
 import "./interfaces/ISportPredictionTreasury.sol";
 import "hardhat/console.sol";
@@ -23,10 +24,13 @@ contract SportPrediction is
     UUPSUpgradeable, 
     OwnableUpgradeable, 
     ReentrancyGuardUpgradeable{
-
+    using SafeERC20 for IERC20;
     using SafeMathUpgradeable for uint;
 
-    address internal crp;
+    /**
+    *  @dev Instance of CRP token
+    */
+    IERC20 crp;
 
     /**
     *  @dev Instance of the sport events Oracle (used to register sport events get their outcome).
@@ -136,7 +140,7 @@ contract SportPrediction is
     function initialize(
         address _oracleAddress,
         address _treasuryAddress,
-        address _crp,
+        IERC20 _crp,
         uint _predictAmount,
         uint _multiplier
         )public initializer{
@@ -262,7 +266,7 @@ contract SportPrediction is
       
 
         // add new prediction
-        treasury.depositToken(crp, msg.sender, predictAmount);
+        crp.transferFrom(msg.sender, address(treasury), predictAmount);
 
         eventToPrediction[_eventId][msg.sender] = 
             Prediction(
@@ -373,7 +377,7 @@ contract SportPrediction is
         Prediction storage userPrediction = eventToPrediction[_eventId][msg.sender];
         userPrediction.claimed = true;
         userPrediction.reward = predictAmount.mul(getMultiplier());
-        treasury.withdrawToken(crp, msg.sender, userPrediction.reward);
+        treasury.withdrawToken(address(crp), msg.sender, userPrediction.reward);
 
         emit Claim(msg.sender, predictAmount);
 
