@@ -12,6 +12,21 @@ interface ISportPrediction {
         Decided     //match has been finally Decided 
     }
 
+    /***
+    * @dev defines a sport event along with its outcome
+    */
+    struct SportEvent {
+        bytes32       id;
+        bytes        teamA; 
+        bytes        teamB;
+        uint          startTimestamp; 
+        uint          endTimestamp;
+        EventOutcome  outcome;
+        int8          realTeamAScore;
+        int8          realTeamBScore;
+    }
+    
+
     // check if event exists
     function eventExists(bytes32 _eventId)
         external view returns (bool);
