@@ -131,8 +131,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         // Add the sport event
         events.push( ISportPrediction.SportEvent(
             eventId, 
-            bytes(_teamA), 
-            bytes(_teamB), 
+            _teamA, 
+            _teamB, 
             _startTimestamp,
             _endTimestamp, 
             EventOutcome.Pending, 

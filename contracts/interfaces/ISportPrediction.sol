@@ -7,9 +7,10 @@ interface ISportPrediction {
     
     /// @notice The possible outcome for an event
     enum EventOutcome {
-        Pending,    //match has not been fought to decision
-        Underway,   //match has started & is underway
-        Decided     //match has been finally Decided 
+        Pending,    // match has not been fought to decision
+        Underway,   // match has started & is underway
+        Decided,    // match has been finally Decided 
+        Cancelled   // match was cancelled
     }
 
     /***
@@ -33,18 +34,18 @@ interface ISportPrediction {
     
     // get all pending events
     function getPendingEvents() 
-        external view returns (bytes32[] memory);
+        external view returns (SportEvent[] memory);
 
-    // get an event info
-    function getEvent(bytes32 _eventId) 
-        external view returns (
-            bytes32       id,
-            string memory teamA, 
-            string memory teamB,
-            uint          startTimestamp, 
-            EventOutcome  outcome, 
-            string memory realTeamAScore,
-            string memory realTeamBScore
-        );
+    // get events using eventids
+    function getEvents(bytes32[] memory eventIds) 
+        external view returns (SportEvent[] memory);
+
+    // get events using indexes
+    function getIndexedEvents(uint[] memory indexes) 
+        external view returns (SportEvent[] memory);
+
+    // get all events
+    function getAllEvents(uint cursor, uint length) 
+        external view returns (SportEvent[] memory);
 }
 
