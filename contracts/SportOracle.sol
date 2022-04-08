@@ -131,8 +131,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         // Add the sport event
         events.push( ISportPrediction.SportEvent(
             eventId, 
-            _teamA, 
-            _teamB, 
+            bytes(_teamA), 
+            bytes(_teamB), 
             _startTimestamp,
             _endTimestamp, 
             EventOutcome.Pending, 
@@ -156,6 +156,13 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         return eventId;
     }
 
+    /**
+     * @notice Add new pending sport events into the blockchain
+     * @param _teamAs names of one team for each sport event
+     * @param _teamBs names of the other teams for each sport event
+     * @param _startTimestamps stating times for each sport event
+     * @param _endTimestamps ending times for each sport event
+     */
     function addSportEvents(
         string[] memory _teamAs,
         string[] memory _teamBs,
@@ -244,6 +251,13 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
 
     }
 
+    /**
+     * @notice Sets the outcome of predefined matches, permanently on the blockchain
+     * @param _eventIds unique ids of matches to be declared
+     * @param _outcomes outcomes of the matches
+     * @param _realTeamAScores teamA scores for each sport event
+     * @param _realTeamBScores teamB scores for each sport event
+     */
     function declareOutcomes(
         bytes32[] memory _eventIds, 
         EventOutcome[] memory _outcomes, 
@@ -304,7 +318,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
      * @return array of all events
      */
     function getIndexedEvents(uint[] memory indexes)
-        public view
+        public view override
         returns (ISportPrediction.SportEvent[] memory)
     {   
         uint count = indexes.length; 
@@ -324,7 +338,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
      * @return array of all events
      */
     function getEvents(bytes32[] memory eventIds)
-        public view
+        public view override
         returns (ISportPrediction.SportEvent[] memory)
     {  
         uint count = eventIds.length; 
@@ -347,7 +361,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
      * @return array of all events
      */
     function getAllEvents(uint cursor, uint length) 
-        public view
+        public view override
         returns (SportEvent[] memory)
     {
         ISportPrediction.SportEvent[] memory output = 
