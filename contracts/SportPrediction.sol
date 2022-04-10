@@ -30,7 +30,7 @@ contract SportPrediction is
     /**
     *  @dev Instance of CRP token
     */
-    IERC20 crp;
+    IERC20 public crp;
 
     /**
     *  @dev Instance of the sport events Oracle (used to register sport events get their outcome).
@@ -49,9 +49,19 @@ contract SportPrediction is
     uint public predictAmount;
 
     /** 
-    * @dev reward multiplier for winner
+    * @dev reward multiplier for winners
     */
     uint internal multiplier;
+
+    /** 
+    * @dev maximum number of predictions per event
+    */
+    uint public maxPredictions;
+
+    /**
+    * @dev total predictions per event
+    */
+    mapping(bytes32 => uint) public eventIdsToPredictionAmount;
 
     /**
      *  @dev for any given event, get the prediction that have been made by a user for that event
@@ -85,14 +95,11 @@ contract SportPrediction is
      * @dev Emitted when a prediction is placed
      */
     event PredictionPlaced(
-        bytes32 _eventId,
-        address _player,
+        bytes32 indexed _eventId,
+        address indexed _player,
         int8    _teamAScore,
         int8    _teamBScore, 
-        uint    _amount,
-        uint    _reward,
-        bool    _predicted,
-        bool    _claimed
+        uint    _amount
     );
 
     /**
@@ -106,6 +113,11 @@ contract SportPrediction is
     event PredictAmountSet( uint _address);
 
     /**
+    * @dev Emitted when max predictions is set
+    */
+    event MaxPredictionsSet( uint _maxPredictions );
+
+    /**
     * @dev Emitted when the sport prediction treasury is set
     */
     event TreasuryAddressSet(address _address);
@@ -113,7 +125,7 @@ contract SportPrediction is
     /**
     * @dev Emitted when user claims reward
     */
-    event Claim( address user, uint reward);
+    event Claim( address indexed user, bytes32 indexed eventId, uint reward);
 
     /**
     * @dev Emitted once multiplier is 
@@ -142,7 +154,8 @@ contract SportPrediction is
         address _treasuryAddress,
         IERC20 _crp,
         uint _predictAmount,
-        uint _multiplier
+        uint _multiplier,
+        uint _maxPredictions
         )public initializer{
             __Ownable_init();
 
@@ -151,6 +164,7 @@ contract SportPrediction is
             crp = _crp;
             predictAmount = _predictAmount;
             multiplier = _multiplier;
+            maxPredictions = _maxPredictions;
     }
 
     /**
@@ -195,6 +209,18 @@ contract SportPrediction is
         require(_predictAmount > 0, "SportPrediction: Predict Amount should be greater than 0");
         predictAmount = _predictAmount;
         emit PredictAmountSet(_predictAmount);
+    }
+
+    /**
+     * @notice sets the max prediction amount
+     * @param _maxPredictions the max predictions per event
+     */
+    function setMaxPredictions(uint _maxPredictions)
+        external onlyOwner
+    {
+        require(_maxPredictions > 0, "SportPrediction: Max predictions should be greater than 0");
+        maxPredictions = _maxPredictions;
+        emit MaxPredictionsSet(_maxPredictions);
     }
 
 
@@ -259,17 +285,22 @@ contract SportPrediction is
         public nonReentrant
     {
 
-        // Make sure this sport event exists 
-        require(sportOracle.eventExists(_eventId), "SportPrediction: Specified event not found");
+        require(eventIdsToPredictionAmount[_eventId] <= maxPredictions, "SportPrediction: Max prediction for event reached.");
+
+        // Make sure game has not started or ended
+        bytes32[] memory ids = new bytes32[](1);
+        ids[0] = _eventId;
+        ISportPrediction.SportEvent memory sportEvent = sportOracle.getEvents(ids)[0];
+        require(sportEvent.startTimestamp >= block.timestamp, "SportPrediction: Event has started or ended.");
+
         // Make sure user predict once
-        require(!_predictIsValid(msg.sender, _eventId), "SportPrediction: User can only predict once");
+        require(!_predictIsValid(msg.sender, _eventId), "SportPrediction: User can only predict once.");
       
 
         // add new prediction
         crp.transferFrom(msg.sender, address(treasury), predictAmount);
 
-        eventToPrediction[_eventId][msg.sender] = 
-            Prediction(
+        Prediction memory prediction = Prediction(
                 msg.sender,
                 _eventId,
                 predictAmount,
@@ -277,20 +308,22 @@ contract SportPrediction is
                 _teamAScore,
                 _teamBScore,
                 true,
-                false) ;
+                false
+            );
+
+        eventToPrediction[_eventId][msg.sender] = prediction;
 
         Prediction[] storage userPredictions = userToPredictions[msg.sender]; 
-        userPredictions.push(eventToPrediction[_eventId][msg.sender]);
+        userPredictions.push(prediction);
+
+        eventIdsToPredictionAmount[_eventId] += 1;
 
         emit PredictionPlaced(
             _eventId,
             msg.sender,    
             _teamAScore,
             _teamBScore, 
-            predictAmount,
-            0,
-            true,
-            false
+            predictAmount
         );
     }
 
@@ -310,11 +343,17 @@ contract SportPrediction is
             // Require that event id exists
             require(sportOracle.eventExists(_eventIds[i]), "SportPrediction: Event does not exist"); 
             output[i] = eventToPrediction[_eventIds[i]][_user];
-            
         }
 
         return output;
 
+    }
+
+    function getAllUserPredictions(address _user)
+        public  
+        view returns(Prediction[] memory)
+    {
+        return userToPredictions[_user];
     }
 
 
@@ -337,9 +376,6 @@ contract SportPrediction is
 
             // Require that event id exists
             require(sportOracle.eventExists(_eventIds[i]), "SportPrediction: Event does not exist"); 
-            // Require that the event is decided
-            require(events[i].outcome == 
-            ISportPrediction.EventOutcome.Decided, "SportPrediction: Event status not decided");
             Prediction memory userPrediction = eventToPrediction[_eventIds[i]][_user];
             // Make sure user predict in specified event
             require(userPrediction.predicted,"SportPrediction: User did not predict on this event");
@@ -360,26 +396,32 @@ contract SportPrediction is
 
     /**
      * @notice claim reward
-     * @param _eventId id of specified event
+     * @param _eventIds ids of events to claim reward
      */
-    function claim(bytes32 _eventId)
+    function claim(bytes32[] memory _eventIds)
         external nonReentrant
     {
-        bytes32[] memory eventArr = new bytes32[](1); 
-        eventArr[0] = _eventId;
+        bytes32[] memory eventArr = new bytes32[](_eventIds.length); 
+        bool[] memory predictStatuses = new bool[](_eventIds.length);
+        predictStatuses = userPredictStatus(msg.sender, _eventIds);
+        ISportPrediction.SportEvent[] memory events = sportOracle.getEvents(_eventIds);
 
-        require(userPredictStatus(msg.sender, eventArr)[0],
-        "SportPrediction: Only Winner can claim reward");
-        require(!eventToPrediction[_eventId][msg.sender].claimed,
-        "SportPrediction: Only winner that doesn't claim reward is allow");
+        for(uint i; i < _eventIds.length; i++){
+            eventArr[i] = _eventIds[i];
+            bool cancelled = events[i].outcome == ISportPrediction.EventOutcome.Cancelled;
+            require(predictStatuses[i] || cancelled,
+                "SportPrediction: Only winner can claim reward");
+            require(!eventToPrediction[_eventIds[i]][msg.sender].claimed,
+                "SportPrediction: User has already claimed reward");
 
-        
-        Prediction storage userPrediction = eventToPrediction[_eventId][msg.sender];
-        userPrediction.claimed = true;
-        userPrediction.reward = predictAmount.mul(getMultiplier());
-        treasury.withdrawToken(address(crp), msg.sender, userPrediction.reward);
+            
+            Prediction storage userPrediction = eventToPrediction[_eventIds[i]][msg.sender];
+            userPrediction.claimed = true;
+            userPrediction.reward = cancelled ? predictAmount : predictAmount.mul(getMultiplier());
+            treasury.withdrawToken(address(crp), msg.sender, userPrediction.reward);
 
-        emit Claim(msg.sender, predictAmount);
+            emit Claim(msg.sender, _eventIds[i], predictAmount);
+        }
 
     } 
 

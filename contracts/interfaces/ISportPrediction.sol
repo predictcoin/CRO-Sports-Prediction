@@ -8,7 +8,6 @@ interface ISportPrediction {
     /// @notice The possible outcome for an event
     enum EventOutcome {
         Pending,    // match has not been fought to decision
-        Underway,   // match has started & is underway
         Decided,    // match has been finally Decided 
         Cancelled   // match was cancelled
     }
