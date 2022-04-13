@@ -56,6 +56,10 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         int8         _realTeamBScore
     );
 
+
+    /**
+     * @dev Triggered once an event has been cancelled
+     */
     event SportEventCancelled(
         bytes32 indexed _eventId
     );
@@ -175,6 +179,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
      * @param _teamBs names of the other teams for each sport event
      * @param _startTimestamps stating times for each sport event
      * @param _endTimestamps ending times for each sport event
+     * @return eventIds array of event ids added to the blockchain
      */
     function addSportEvents(
         string[] memory _teamAs,
@@ -195,6 +200,13 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         return eventIds;
     }
 
+
+    /**
+     * @notice Update sport events timestamps
+     * @param _eventIds event ids  for each sport event
+     * @param _startTimestamps stating times for each sport event
+     * @param _endTimestamps ending times for each sport event
+     */
     function updateSportEvents(
         bytes32[] memory _eventIds,
         uint[] memory _startTimestamps,
@@ -216,6 +228,11 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         }
     }
 
+
+    /**
+     * @notice Cancel sport events
+     * @param _eventIds event ids  for each sport event
+     */
     function cancelSportEvents(bytes32[] memory _eventIds) 
     external onlyAdmin{
         for (uint8 i; i < _eventIds.length; i++){

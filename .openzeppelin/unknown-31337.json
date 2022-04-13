@@ -23,19 +23,19 @@
     },
     {
       "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-      "txHash": "0x83a4c679b2cc617ed4671cf6055388001f9477fdf61d514b25a9d9e577582a15",
+      "txHash": "0xccd82f0811f321c98950da3ae9a24874446fb445335360962a26e2cc69e8844c",
       "kind": "uups"
     },
     {
       "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-      "txHash": "0x2b7f204d03b8179c1052187014905798eb5b28b61c7ee64ec78e9d0b1edcd840",
+      "txHash": "0x7d90abc158e604d1d3d70f74e699316ee38334b480d55e3cdb3ff314a05e430c",
       "kind": "uups"
     }
   ],
   "impls": {
-    "ce22bb13216a28f0bda9f37eaa062a3575f1d4ff3f5c00bfd3783c3dc996f67b": {
+    "c72dfdf02de3a1183c3262cf825b8511a514c5a8ec0cb5aff296aae594dbe6e5": {
       "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-      "txHash": "0x35f86a820a8cb38912d64a748611521fc31d634caabc2e88e0fa7e6d0fec3e36",
+      "txHash": "0xebefebd3f6e4243bc505c34da858c2a981c117a315e208e04afdfc731e83cdea",
       "layout": {
         "storage": [
           {
@@ -106,7 +106,7 @@
             "label": "events",
             "offset": 0,
             "slot": "202",
-            "type": "t_array(t_struct(SportEvent)2985_storage)dyn_storage",
+            "type": "t_array(t_struct(SportEvent)4697_storage)dyn_storage",
             "contract": "SportOracle",
             "src": "contracts/SportOracle.sol:27"
           },
@@ -123,7 +123,7 @@
           "t_address": {
             "label": "address"
           },
-          "t_array(t_struct(SportEvent)2985_storage)dyn_storage": {
+          "t_array(t_struct(SportEvent)4697_storage)dyn_storage": {
             "label": "struct ISportPrediction.SportEvent[]"
           },
           "t_array(t_uint256)49_storage": {
@@ -138,12 +138,15 @@
           "t_bytes32": {
             "label": "bytes32"
           },
-          "t_enum(EventOutcome)2967": {
+          "t_bytes_storage": {
+            "label": "bytes"
+          },
+          "t_enum(EventOutcome)4679": {
             "label": "enum ISportPrediction.EventOutcome",
             "members": [
               "Pending",
-              "Underway",
-              "Decided"
+              "Decided",
+              "Cancelled"
             ]
           },
           "t_int8": {
@@ -152,10 +155,7 @@
           "t_mapping(t_bytes32,t_uint256)": {
             "label": "mapping(bytes32 => uint256)"
           },
-          "t_string_storage": {
-            "label": "string"
-          },
-          "t_struct(SportEvent)2985_storage": {
+          "t_struct(SportEvent)4697_storage": {
             "label": "struct ISportPrediction.SportEvent",
             "members": [
               {
@@ -164,11 +164,11 @@
               },
               {
                 "label": "teamA",
-                "type": "t_string_storage"
+                "type": "t_bytes_storage"
               },
               {
                 "label": "teamB",
-                "type": "t_string_storage"
+                "type": "t_bytes_storage"
               },
               {
                 "label": "startTimestamp",
@@ -180,7 +180,7 @@
               },
               {
                 "label": "outcome",
-                "type": "t_enum(EventOutcome)2967"
+                "type": "t_enum(EventOutcome)4679"
               },
               {
                 "label": "realTeamAScore",
@@ -198,9 +198,9 @@
         }
       }
     },
-    "14282c288b297a433e6490102ecfcc5bc0ad345a2520e7f2424a72d08eb17c28": {
+    "d67991fd21c6928110d127c86844b88b81ae65cc04bb233996f32aab2624dcb0": {
       "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-      "txHash": "0x25dcf4f2ed0b0e73bfda833333a87dc7ec12b56cd4916eb35af113232bf0a6f2",
+      "txHash": "0xa39a3e7592985e316b1987c352412fbe40c0f0098fdab1926e3a608276571eee",
       "layout": {
         "storage": [
           {
@@ -279,25 +279,25 @@
             "label": "crp",
             "offset": 0,
             "slot": "251",
-            "type": "t_address",
+            "type": "t_contract(IERC20Upgradeable)859",
             "contract": "SportPrediction",
-            "src": "contracts/SportPrediction.sol:29"
+            "src": "contracts/SportPrediction.sol:34"
           },
           {
             "label": "sportOracle",
             "offset": 0,
             "slot": "252",
-            "type": "t_contract(ISportPrediction)3666",
+            "type": "t_contract(ISportPrediction)2683",
             "contract": "SportPrediction",
-            "src": "contracts/SportPrediction.sol:34"
+            "src": "contracts/SportPrediction.sol:39"
           },
           {
             "label": "treasury",
             "offset": 0,
             "slot": "253",
-            "type": "t_contract(ISportPredictionTreasury)3696",
+            "type": "t_contract(ISportPredictionTreasury)2701",
             "contract": "SportPrediction",
-            "src": "contracts/SportPrediction.sol:40"
+            "src": "contracts/SportPrediction.sol:45"
           },
           {
             "label": "predictAmount",
@@ -305,7 +305,7 @@
             "slot": "254",
             "type": "t_uint256",
             "contract": "SportPrediction",
-            "src": "contracts/SportPrediction.sol:45"
+            "src": "contracts/SportPrediction.sol:50"
           },
           {
             "label": "multiplier",
@@ -313,30 +313,46 @@
             "slot": "255",
             "type": "t_uint256",
             "contract": "SportPrediction",
-            "src": "contracts/SportPrediction.sol:50"
+            "src": "contracts/SportPrediction.sol:55"
+          },
+          {
+            "label": "maxPredictions",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:60"
+          },
+          {
+            "label": "eventIdsToPredictionAmount",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:65"
           },
           {
             "label": "eventToPrediction",
             "offset": 0,
-            "slot": "256",
-            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_struct(Prediction)2750_storage))",
+            "slot": "258",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_struct(Prediction)1826_storage))",
             "contract": "SportPrediction",
-            "src": "contracts/SportPrediction.sol:56"
+            "src": "contracts/SportPrediction.sol:71"
           },
           {
             "label": "userToPredictions",
             "offset": 0,
-            "slot": "257",
-            "type": "t_mapping(t_address,t_array(t_struct(Prediction)2750_storage)dyn_storage)",
+            "slot": "259",
+            "type": "t_mapping(t_address,t_array(t_struct(Prediction)1826_storage)dyn_storage)",
             "contract": "SportPrediction",
-            "src": "contracts/SportPrediction.sol:63"
+            "src": "contracts/SportPrediction.sol:78"
           }
         ],
         "types": {
           "t_address": {
             "label": "address"
           },
-          "t_array(t_struct(Prediction)2750_storage)dyn_storage": {
+          "t_array(t_struct(Prediction)1826_storage)dyn_storage": {
             "label": "struct SportPrediction.Prediction[]"
           },
           "t_array(t_uint256)49_storage": {
@@ -351,25 +367,31 @@
           "t_bytes32": {
             "label": "bytes32"
           },
-          "t_contract(ISportPrediction)3666": {
+          "t_contract(IERC20Upgradeable)859": {
+            "label": "contract IERC20Upgradeable"
+          },
+          "t_contract(ISportPrediction)2683": {
             "label": "contract ISportPrediction"
           },
-          "t_contract(ISportPredictionTreasury)3696": {
+          "t_contract(ISportPredictionTreasury)2701": {
             "label": "contract ISportPredictionTreasury"
           },
           "t_int8": {
             "label": "int8"
           },
-          "t_mapping(t_address,t_array(t_struct(Prediction)2750_storage)dyn_storage)": {
+          "t_mapping(t_address,t_array(t_struct(Prediction)1826_storage)dyn_storage)": {
             "label": "mapping(address => struct SportPrediction.Prediction[])"
           },
-          "t_mapping(t_address,t_struct(Prediction)2750_storage)": {
+          "t_mapping(t_address,t_struct(Prediction)1826_storage)": {
             "label": "mapping(address => struct SportPrediction.Prediction)"
           },
-          "t_mapping(t_bytes32,t_mapping(t_address,t_struct(Prediction)2750_storage))": {
+          "t_mapping(t_bytes32,t_mapping(t_address,t_struct(Prediction)1826_storage))": {
             "label": "mapping(bytes32 => mapping(address => struct SportPrediction.Prediction))"
           },
-          "t_struct(Prediction)2750_storage": {
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          },
+          "t_struct(Prediction)1826_storage": {
             "label": "struct SportPrediction.Prediction",
             "members": [
               {

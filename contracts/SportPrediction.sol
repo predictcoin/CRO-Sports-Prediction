@@ -6,7 +6,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "./interfaces/ISportPrediction.sol";
 import "./interfaces/ISportPredictionTreasury.sol";
 import "hardhat/console.sol";
@@ -24,13 +25,13 @@ contract SportPrediction is
     UUPSUpgradeable, 
     OwnableUpgradeable, 
     ReentrancyGuardUpgradeable{
-    using SafeERC20 for IERC20;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint;
 
     /**
     *  @dev Instance of CRP token
     */
-    IERC20 public crp;
+    IERC20Upgradeable public crp;
 
     /**
     *  @dev Instance of the sport events Oracle (used to register sport events get their outcome).
@@ -152,7 +153,7 @@ contract SportPrediction is
     function initialize(
         address _oracleAddress,
         address _treasuryAddress,
-        IERC20 _crp,
+        IERC20Upgradeable _crp,
         uint _predictAmount,
         uint _multiplier,
         uint _maxPredictions

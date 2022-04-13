@@ -35,6 +35,11 @@ contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
     }
 
 
+    /**
+     * @notice check if address is authorized 
+     * @param account the address of account to be checked
+     * @return bool return true if account is authorized and false otherwise
+     */
     function isAuthorized(address account)
         public view returns (bool)
     {
@@ -45,6 +50,11 @@ contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
         return false;
     }
 
+
+    /**
+     * @notice sets the address of the sport prediction contract to use 
+     * @param _address the address of the sport prediction contracts
+     */
     function setSportPredictionAddress(address _address)
         external 
         onlyRole("deployer")
