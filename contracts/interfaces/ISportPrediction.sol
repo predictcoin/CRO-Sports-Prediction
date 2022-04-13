@@ -7,9 +7,9 @@ interface ISportPrediction {
     
     /// @notice The possible outcome for an event
     enum EventOutcome {
-        Pending,    //match has not been fought to decision
-        Underway,   //match has started & is underway
-        Decided     //match has been finally Decided 
+        Pending,    // match has not been fought to decision
+        Decided,    // match has been finally Decided 
+        Cancelled   // match was cancelled
     }
 
     /***
@@ -17,8 +17,8 @@ interface ISportPrediction {
     */
     struct SportEvent {
         bytes32       id;
-        string        teamA; 
-        string        teamB;
+        bytes        teamA; 
+        bytes        teamB;
         uint          startTimestamp; 
         uint          endTimestamp;
         EventOutcome  outcome;

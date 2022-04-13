@@ -36,14 +36,32 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
      * @dev Triggered once an event has been added
      */
     event SportEventAdded(
-        bytes32      _eventId,
-        string       _teamA,
-        string       _teamB,
+        bytes32 indexed _eventId,
+        string  indexed _teamA,
+        string  indexed _teamB,
         uint         _startTimestamp,
         uint         _endTimestamp,
-        EventOutcome _eventOutcome,
         int8         _realTeamAScore,
         int8         _realTeamBScore
+    );
+
+    /**
+     * @dev Triggered once an event has been declared
+     */
+    event SportEventDeclared(
+        bytes32 indexed _eventId,
+        string  indexed _teamA,
+        string  indexed _teamB,
+        int8         _realTeamAScore,
+        int8         _realTeamBScore
+    );
+
+
+    /**
+     * @dev Triggered once an event has been cancelled
+     */
+    event SportEventCancelled(
+        bytes32 indexed _eventId
     );
 
     /**
@@ -113,8 +131,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         public onlyAdmin returns (bytes32)
     {
         require(
-            _startTimestamp >= block.timestamp + 1 days,
-            "SportOracle: Time must be >= 1 day from now"
+            _startTimestamp > block.timestamp,
+            "SportOracle: Time must be greater than blockchain time"
         );
 
         // Hash key fields of the sport event to get a unique id
@@ -122,7 +140,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             _teamA,
             _teamB,
             _startTimestamp,
-            _endTimestamp));
+            _endTimestamp
+        ));
 
         // Make sure that the sport event is unique and does not exist yet
         require( !eventExists(eventId)  , "SportOracle: Event already exists");
@@ -130,12 +149,13 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         // Add the sport event
         events.push( ISportPrediction.SportEvent(
             eventId, 
-            _teamA, 
-            _teamB, 
+            bytes(_teamA), 
+            bytes(_teamB), 
             _startTimestamp,
             _endTimestamp, 
             EventOutcome.Pending, 
-            -1, -1));
+            -1, -1
+        ));
         uint newIndex = events.length - 1;
         eventIdToIndex[eventId] = newIndex + 1;
 
@@ -145,13 +165,89 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             _teamB,
             _startTimestamp,
             _endTimestamp,
-            EventOutcome.Pending,
             -1,
             -1
         );
 
         // Return the unique id of the new sport event
         return eventId;
+    }
+
+    /**
+     * @notice Add new pending sport events into the blockchain
+     * @param _teamAs names of one team for each sport event
+     * @param _teamBs names of the other teams for each sport event
+     * @param _startTimestamps stating times for each sport event
+     * @param _endTimestamps ending times for each sport event
+     * @return eventIds array of event ids added to the blockchain
+     */
+    function addSportEvents(
+        string[] memory _teamAs,
+        string[] memory _teamBs,
+        uint[] memory _startTimestamps,
+        uint[] memory _endTimestamps
+    )
+        external onlyAdmin returns (bytes32[] memory)
+    {
+        bytes32[] memory eventIds = new bytes32[](_teamBs.length);
+
+        for(uint8 i; uint256(i) < _teamAs.length; i++){
+            eventIds[i] = addSportEvent(
+                _teamAs[i], _teamBs[i], _startTimestamps[i], _endTimestamps[i]
+            );
+        }
+
+        return eventIds;
+    }
+
+
+    /**
+     * @notice Update sport events timestamps
+     * @param _eventIds event ids  for each sport event
+     * @param _startTimestamps stating times for each sport event
+     * @param _endTimestamps ending times for each sport event
+     */
+    function updateSportEvents(
+        bytes32[] memory _eventIds,
+        uint[] memory _startTimestamps,
+        uint[] memory _endTimestamps
+    ) external onlyAdmin {
+        for (uint8 i; i < _eventIds.length; i++){       
+            //get event
+            uint index = _getMatchIndex(_eventIds[i]);
+            ISportPrediction.SportEvent storage sportEvent = events[index];
+            // ensure event has not started or has ended
+            require(sportEvent.outcome == ISportPrediction.EventOutcome.Pending
+                && (sportEvent.startTimestamp >= block.timestamp ||
+                    sportEvent.endTimestamp <= block.timestamp),
+                "SportOracle: Event cant be updated"
+            );
+
+            sportEvent.endTimestamp = _endTimestamps[i];
+            sportEvent.startTimestamp = _startTimestamps[i];
+        }
+    }
+
+
+    /**
+     * @notice Cancel sport events
+     * @param _eventIds event ids  for each sport event
+     */
+    function cancelSportEvents(bytes32[] memory _eventIds) 
+    external onlyAdmin{
+        for (uint8 i; i < _eventIds.length; i++){
+            //get event
+            uint index = _getMatchIndex(_eventIds[i]);
+            ISportPrediction.SportEvent storage sportEvent = events[index];
+
+            require(sportEvent.outcome == ISportPrediction.EventOutcome.Pending,
+                "SportOracle: Event cant be cancelled"
+            );
+            sportEvent.outcome = ISportPrediction.EventOutcome.Cancelled;
+            sportEvent.startTimestamp = 0;
+            sportEvent.endTimestamp = 0;
+            emit SportEventCancelled(_eventIds[i]);
+        }
     }
 
     /**
@@ -191,27 +287,56 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
     /**
      * @notice Sets the outcome of a predefined match, permanently on the blockchain
      * @param _eventId unique id of the match to modify
-     * @param _outcome outcome of the match
      * @param _realTeamAScore teamA score for the sport event
      * @param _realTeamBScore teamB score for the sport event
      */
-    function declareOutcome(bytes32 _eventId, 
-        EventOutcome _outcome, 
+    function declareOutcome(
+        bytes32 _eventId, 
         int8 _realTeamAScore, 
-        int8 _realTeamBScore)
-        onlyAdmin external
+        int8 _realTeamBScore
+        )
+        onlyAdmin public
     {
         // Require that it exists
         require(eventExists(_eventId), "SportOracle: Event does not exist");
-
         // Get the event
         uint index = _getMatchIndex(_eventId);
-        ISportPrediction.SportEvent storage theMatch = events[index];
-
+        ISportPrediction.SportEvent storage sportEvent = events[index];
+        // Ensure the game has ended
+        require(sportEvent.endTimestamp <= block.timestamp, "SportOracle: Event has not ended");
+        // Require that the event has started
+        require(sportEvent.outcome != ISportPrediction.EventOutcome.Decided, 
+            "SportOracle: Event has already been declared");
         // Set the outcome
-        theMatch.outcome = _outcome;
-        theMatch.realTeamAScore = _realTeamAScore;
-        theMatch.realTeamBScore = _realTeamBScore;    
+        sportEvent.outcome = ISportPrediction.EventOutcome.Decided;
+        sportEvent.realTeamAScore = _realTeamAScore;
+        sportEvent.realTeamBScore = _realTeamBScore;    
+
+        emit SportEventDeclared(
+            _eventId,
+            string(sportEvent.teamA),
+            string(sportEvent.teamB),
+            _realTeamAScore,
+            _realTeamBScore
+        );
+    }
+
+    /**
+     * @notice Sets the outcome of predefined matches, permanently on the blockchain
+     * @param _eventIds unique ids of matches to be declared
+     * @param _realTeamAScores teamA scores for each sport event
+     * @param _realTeamBScores teamB scores for each sport event
+     */
+    function declareOutcomes(
+        bytes32[] memory _eventIds,  
+        int8[] memory _realTeamAScores, 
+        int8[] memory _realTeamBScores
+    ) external {
+        for(uint8 i; uint256(i) < _eventIds.length; i++){
+            declareOutcome(
+                _eventIds[i], _realTeamAScores[i], _realTeamBScores[i]
+            );
+        }
 
     }
 
@@ -227,7 +352,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
 
         // Get the count of pending events
         for (uint i = 0; i < events.length; i = i + 1) {
-            if (events[i].outcome == EventOutcome.Pending)
+            if (events[i].outcome == EventOutcome.Pending 
+                && events[i].startTimestamp >= block.timestamp)
                 count = count + 1;
         }
 
@@ -238,7 +364,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         if (count > 0) {
             uint index = 0;
             for (uint n = events.length;  n > 0;  n = n - 1) {
-                if (events[n - 1].outcome == EventOutcome.Pending) {
+                if (events[n - 1].outcome == EventOutcome.Pending 
+                    && events[n-1].startTimestamp >= block.timestamp) {
                     output[index] = events[n - 1];
                     index = index + 1;
                 }
@@ -262,12 +389,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         ISportPrediction.SportEvent[] memory output = 
             new ISportPrediction.SportEvent[](count);
 
-        if(count > 0){
-            uint index = 0;
-            for (uint n = 0;  n < count;  n = n + 1) {
-                output[index] = events[indexes[n]];
-                index = index + 1;
-            }
+        for (uint n = 0;  n < count;  n = n + 1) {
+            output[n] = events[indexes[n]];
         }
         
         return output;
@@ -286,13 +409,9 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         ISportPrediction.SportEvent[] memory output = 
             new ISportPrediction.SportEvent[](count);
 
-        if(count > 0){
-            uint index = 0;
-            for (uint n = 0;  n < count;  n = n + 1) {
-                uint eventIndex = _getMatchIndex(eventIds[n]);
-                output[index] = events[eventIndex];
-                index = index + 1;
-            }
+        for (uint n = 0;  n < count;  n = n + 1) {
+            uint eventIndex = _getMatchIndex(eventIds[n]);
+            output[n] = events[eventIndex];
         }
         
         return output;
@@ -306,20 +425,16 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
      * @return array of all events
      */
     function getAllEvents(uint cursor, uint length) 
-        public view override 
+        public view override
         returns (SportEvent[] memory)
     {
         ISportPrediction.SportEvent[] memory output = 
             new ISportPrediction.SportEvent[](length);
 
-        if(length > 0){
-            uint index = 0;
-            for (uint n = cursor;  n < length;  n = n + 1) {
-                output[index] = events[n];
-                index = index + 1;
-            }
+        for (uint n = cursor;  n < length;  n = n + 1) {
+            output[n] = events[n];
         }
-        
+    
         return output;
     }
 

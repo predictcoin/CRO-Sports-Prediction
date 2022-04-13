@@ -15,9 +15,10 @@ async function main() {
       treasury.address,
       crpToken,
       ethers.utils.parseUnits("100"),
+      5,
       10],
       {kind: "uups"});
-  
+
 
   console.log(`
     SportOracle deployed to: ${sportOracle.address},
