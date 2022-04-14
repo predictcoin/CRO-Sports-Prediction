@@ -27,7 +27,8 @@ describe('SportPrediction Contract Test', () => {
               treasury.address,
               token.address,
               ethers.utils.parseUnits("100"),
-              10],
+              10,
+              50],
               {kind: "uups"})
 
         // Add 2 sport events for test purpose
@@ -35,13 +36,6 @@ describe('SportPrediction Contract Test', () => {
         teamB1 = "Lyon"
         startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
         endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
-
-        await sportOracle.connect(deployer).addSportEvent(
-            teamA1,
-            teamB1,
-            startTime1,
-            endTime1
-        )
 
         eventId1 = ethers.utils.solidityKeccak256(
             ["string", "string", "uint256", "uint256"],
@@ -53,23 +47,26 @@ describe('SportPrediction Contract Test', () => {
         startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
         endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
 
-        await sportOracle.connect(deployer).addSportEvent(
-            teamA2,
-            teamB2,
-            startTime2,
-            endTime2
-        )
-
         eventId2 = ethers.utils.solidityKeccak256(
             ["string", "string", "uint256", "uint256"],
             [teamA2, teamB2, startTime2, endTime2]
         )
+
+        await sportOracle.connect(deployer).addSportEvents(
+            [teamA1, teamA2],
+            [teamB1, teamB2],
+            [startTime1, startTime2],
+            [endTime1, endTime2]
+        )
+
+        
     })
 
     it('Should initialize contract variable', async() => {
         expect(await sportPrediction.sportOracle()).to.equal(sportOracle.address)
         expect(await sportPrediction.treasury()).to.equal(treasury.address)
         expect(await sportPrediction.predictAmount()).to.equal(ethers.utils.parseUnits("100"))
+        expect(await sportPrediction.maxPredictions()).to.equal(ethers.BigNumber.from("50"))
     })
 
 
@@ -135,11 +132,32 @@ describe('SportPrediction Contract Test', () => {
         expect(sportPrediction.connect(user).setMultiplier(amount)).to.be.reverted
     })
 
-    it("Should returns predictable sport events using", async () => {
+
+    it('Should update maximum predictions count', async() => {
+        const count = ethers.BigNumber.from(100)
+        const tx = await sportPrediction.setMaxPredictions(count)
+        const receipt = await tx.wait()
+        expect(receipt.events[0].args[0]).to.equal(count)
+    })
+
+
+    it('Should allow only owner to update maximum predictions count', async() => {
+        const count = ethers.BigNumber.from(100)
+        expect(sportPrediction.connect(user).setMaxPredictions(count)).to.be.reverted
+    })
+
+
+    it('Should only update maximum prediction count greater than 0', async() => {
+        const count = ethers.BigNumber.from(0)
+        expect(sportPrediction.connect(user).setMaxPredictions(count)).to.be.reverted
+    })
+
+
+    it("Should returns predictable sport events", async () => {
         const tx  = await sportPrediction.getPredictableEvents()
         expect(tx[0].id).to.equal(eventId2)
-        expect(tx[0].teamA).to.equal(teamA2)
-        expect(tx[0].teamB).to.equal(teamB2)
+        expect(ethers.utils.toUtf8String(tx[0].teamA)).to.equal(teamA2)
+        expect(ethers.utils.toUtf8String(tx[0].teamB)).to.equal(teamB2)
         expect(tx[0].startTimestamp).to.equal(ethers.BigNumber.from(startTime2))
         expect(tx[0].endTimestamp).to.equal(ethers.BigNumber.from(endTime2))
         expect(tx[0].outcome).to.equal(ethers.BigNumber.from(0))
@@ -147,8 +165,8 @@ describe('SportPrediction Contract Test', () => {
         expect(tx[0].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
 
         expect(tx[1].id).to.equal(eventId1)
-        expect(tx[1].teamA).to.equal(teamA1)
-        expect(tx[1].teamB).to.equal(teamB1)
+        expect(ethers.utils.toUtf8String(tx[1].teamA)).to.equal(teamA1)
+        expect(ethers.utils.toUtf8String(tx[1].teamB)).to.equal(teamB1)
         expect(tx[1].startTimestamp).to.equal(ethers.BigNumber.from(startTime1))
         expect(tx[1].endTimestamp).to.equal(ethers.BigNumber.from(endTime1))
         expect(tx[1].outcome).to.equal(ethers.BigNumber.from(0))
@@ -159,26 +177,23 @@ describe('SportPrediction Contract Test', () => {
 
     it('Should predict on sport event', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
+        await token.approve(sportPrediction.address, predictAmount)
         const tx = await sportPrediction.predict(
             eventId1,
             ethers.BigNumber.from(1),
             ethers.BigNumber.from(3))
 
         const receipt = await tx.wait()
-        expect(receipt.events[3].args[0]).to.equal(eventId1)
-        expect(receipt.events[3].args[1]).to.equal(await deployer.getAddress())
-        expect(receipt.events[3].args[2]).to.equal(ethers.BigNumber.from(1))
-        expect(receipt.events[3].args[3]).to.equal(ethers.BigNumber.from(3))
-        expect(receipt.events[3].args[4]).to.equal(predictAmount)
-        expect(receipt.events[3].args[5]).to.equal(ethers.BigNumber.from(0))
-        expect(receipt.events[3].args[6]).to.be.true
-        expect(receipt.events[3].args[7]).to.be.false
+        expect(receipt.events[2].args[0]).to.equal(eventId1)
+        expect(receipt.events[2].args[1]).to.equal(await deployer.getAddress())
+        expect(receipt.events[2].args[2]).to.equal(ethers.BigNumber.from(1))
+        expect(receipt.events[2].args[3]).to.equal(ethers.BigNumber.from(3))
+        expect(receipt.events[2].args[4]).to.equal(predictAmount)
     })
 
     it('Should only predict on sport event when user balance exceed predict amount', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
-        await token.connect(user).approve(treasury.address, predictAmount)
+        await token.connect(user).approve(sportPrediction.address, predictAmount)
         expect(sportPrediction.connect(user).predict(
             eventId1,
             ethers.BigNumber.from(1),
@@ -188,7 +203,7 @@ describe('SportPrediction Contract Test', () => {
 
     it('Should only predict on sport event once', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
+        await token.approve(sportPrediction.address, predictAmount)
 
         await sportPrediction.predict(
             eventId1,
@@ -204,7 +219,7 @@ describe('SportPrediction Contract Test', () => {
 
     it('Should only predict on valid sport event', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
+        await token.approve(sportPrediction.address, predictAmount)
 
         const nonExistentEventId = ethers.utils.solidityKeccak256(
             ["string", "string", "uint256", "uint256"],
@@ -222,7 +237,7 @@ describe('SportPrediction Contract Test', () => {
 
     it('Should returns user predictions on sport events', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
+        await token.approve(sportPrediction.address, predictAmount)
         await sportPrediction.predict(
             eventId1,
             ethers.BigNumber.from(1),
@@ -257,7 +272,7 @@ describe('SportPrediction Contract Test', () => {
 
     it('Should only returns user predictions status on sport events that are decided', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
+        await token.approve(sportPrediction.address, predictAmount)
         await sportPrediction.predict(
             eventId1,
             ethers.BigNumber.from(1),
@@ -280,119 +295,4 @@ describe('SportPrediction Contract Test', () => {
         expect(sportPrediction.userPredictStatus(deployer.getAddress(),[nonExistentEventId])).to.be.reverted
     })
 
-
-    it('Should returns false if the user predicted wrong score ', async() => {
-        const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
-        await sportPrediction.predict(
-            eventId1,
-            ethers.BigNumber.from(1),
-            ethers.BigNumber.from(3))
-
-        await sportOracle.declareOutcome(
-            eventId1,
-            ethers.BigNumber.from(2),
-            ethers.BigNumber.from(3),
-            ethers.BigNumber.from(1)
-        )
-
-        const tx = await sportPrediction.userPredictStatus(deployer.getAddress(),[eventId1])
-        expect(tx[0]).to.be.false
-    })
-
-
-    it('Should returns true if the user predicted correct score ', async() => {
-        const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
-        await sportPrediction.predict(
-            eventId1,
-            ethers.BigNumber.from(1),
-            ethers.BigNumber.from(3))
-
-        await sportOracle.declareOutcome(
-            eventId1,
-            ethers.BigNumber.from(2),
-            ethers.BigNumber.from(1),
-            ethers.BigNumber.from(3)
-        )
-
-        const tx = await sportPrediction.userPredictStatus(deployer.getAddress(),[eventId1])
-        expect(tx[0]).to.be.true
-    })
-
-
-    it('Should allow only winner to claim reward for a sport event', async() => {
-        const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
-        await sportPrediction.predict(
-            eventId1,
-            ethers.BigNumber.from(1),
-            ethers.BigNumber.from(3))
-
-        await sportOracle.declareOutcome(
-            eventId1,
-            ethers.BigNumber.from(2),
-            ethers.BigNumber.from(2),
-            ethers.BigNumber.from(3)
-        )
-
-        expect(sportPrediction.claim(eventId1)).to.be.reverted
-    })
-
-
-    it('Should claim reward to for a sport event', async() => {
-        const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
-        await sportPrediction.predict(
-            eventId1,
-            ethers.BigNumber.from(1),
-            ethers.BigNumber.from(3))
-
-        await sportOracle.declareOutcome(
-            eventId1,
-            ethers.BigNumber.from(2),
-            ethers.BigNumber.from(1),
-            ethers.BigNumber.from(3)
-        )
-
-        const amount = ethers.utils.parseUnits("10000")
-        await token.approve(treasury.address, amount)
-        await treasury.depositToken(token.address, deployer.getAddress(), amount)
-
-        await treasury.setSportPredictionAddress(sportPrediction.address)
-        await token.approve(deployer.getAddress(), predictAmount)
-        const tx = await sportPrediction.claim(eventId1)
-        const receipt  = await tx.wait()
-        expect(receipt.events[2].args[0]).to.equal(await deployer.getAddress())
-        expect(receipt.events[2].args[1]).to.equal(predictAmount)
-
-    })
-
-
-    it("Should allow only winner that does'nt claim reward to claim for a sport event", async() => {
-        const predictAmount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, predictAmount)
-        await sportPrediction.predict(
-            eventId1,
-            ethers.BigNumber.from(1),
-            ethers.BigNumber.from(3))
-
-        await sportOracle.declareOutcome(
-            eventId1,
-            ethers.BigNumber.from(2),
-            ethers.BigNumber.from(1),
-            ethers.BigNumber.from(3)
-        )
-
-        const amount = ethers.utils.parseUnits("10000")
-        await token.approve(treasury.address, amount)
-        await treasury.depositToken(token.address, deployer.getAddress(), amount)
-
-        await treasury.setSportPredictionAddress(sportPrediction.address)
-        await token.approve(deployer.getAddress(), predictAmount)
-        const tx = await sportPrediction.claim(eventId1)
-
-        expect(sportPrediction.claim(eventId1)).to.be.reverted
-
-    })
 })
