@@ -24,7 +24,8 @@ describe('SportPrediction Treasury Contract Test', () => {
               treasury.address,
               token.address,
               ethers.utils.parseUnits("100"),
-              10],
+              10,
+              50],
               {kind: "uups"});
     })
 
@@ -49,38 +50,9 @@ describe('SportPrediction Treasury Contract Test', () => {
     })
 
 
-    it('Should deposit BNB to treasury contract', async() => {
-        const amount = ethers.utils.parseUnits("100")
-        const tx = await treasury.deposit({value: amount})
-        const receipt  = await tx.wait()
-        const treasuryBalance = await provider.getBalance(treasury.address)
-        expect(treasuryBalance).to.equal(amount)
-        expect(receipt.events[0].args[0]).to.equal(await deployer.getAddress())
-        expect(receipt.events[0].args[1]).to.equal(amount)
-    })
-
-
-    it('Should only deposit BNB to treasury contract greater than 0', async() => {
-        const amount = ethers.BigNumber.from(0)
-        expect(treasury.deposit({value: amount})).to.be.reverted
-    })
-
-
-    it('Should deposit token to treasury contract', async() => {
-        const amount = ethers.utils.parseUnits("100")
-        await token.approve(treasury.address, amount)
-        const tx = await treasury.depositToken(token.address, deployer.getAddress(), amount)
-        const receipt  = await tx.wait()
-        const treasuryBalance = await token.balanceOf(treasury.address)
-        expect(treasuryBalance).to.equal(amount)
-        expect(receipt.events[2].args[0]).to.equal(await deployer.getAddress())
-        expect(receipt.events[2].args[1]).to.equal(amount)
-    })
-
-
     it('Should withdraw BNB from treasury contract', async() => {
         const amount = ethers.utils.parseUnits("50")
-        await treasury.deposit({value: amount})
+        await deployer.sendTransaction({to: treasury.address, value: amount})
 
         const tx = await treasury.withdraw(amount)
         const contractBalance = await provider.getBalance(treasury.address)
@@ -93,7 +65,7 @@ describe('SportPrediction Treasury Contract Test', () => {
 
     it('Should only allow deployer withdraw BNB from treasury contract', async() => {
         const amount = ethers.utils.parseUnits("50")
-        await treasury.deposit({value: amount})
+        await deployer.sendTransaction({to: treasury.address, value: amount})
 
         expect(treasury.connect(user).withdraw(amount)).to.be.reverted
     })
@@ -103,7 +75,7 @@ describe('SportPrediction Treasury Contract Test', () => {
     it('Should withdraw token from treasury contract', async() => {
         const amount = ethers.utils.parseUnits("50")
         await token.approve(treasury.address, amount)
-        await treasury.depositToken(token.address, deployer.getAddress(), amount)
+        await token.transfer(treasury.address, amount)
 
         await token.approve(user.getAddress(), amount)
         const tx = await treasury.withdrawToken(token.address, user.getAddress(), amount)
@@ -118,7 +90,7 @@ describe('SportPrediction Treasury Contract Test', () => {
     it('Should allow only authorised account withdraw token from treasury contract', async() => {
         const amount = ethers.utils.parseUnits("50")
         await token.approve(treasury.address, amount)
-        await treasury.depositToken(token.address, deployer.getAddress(), amount)
+        await token.transfer(treasury.address, amount)
 
         await token.approve(user.getAddress(), amount)
         expect(treasury.connect(user).withdrawToken(token.address, user.getAddress(), amount)).to.be.reverted
