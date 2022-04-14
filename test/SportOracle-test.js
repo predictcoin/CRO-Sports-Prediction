@@ -23,13 +23,6 @@ describe('SportOracle Contract Test', () => {
         startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
         endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
 
-        await sportOracle.connect(deployer).addSportEvent(
-            teamA1,
-            teamB1,
-            startTime1,
-            endTime1
-        )
-
         eventId1 = ethers.utils.solidityKeccak256(
             ["string", "string", "uint256", "uint256"],
             [teamA1, teamB1, startTime1, endTime1]
@@ -40,16 +33,16 @@ describe('SportOracle Contract Test', () => {
         startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
         endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
 
-        await sportOracle.connect(deployer).addSportEvent(
-            teamA2,
-            teamB2,
-            startTime2,
-            endTime2
-        )
-
         eventId2 = ethers.utils.solidityKeccak256(
             ["string", "string", "uint256", "uint256"],
             [teamA2, teamB2, startTime2, endTime2]
+        )
+
+        await sportOracle.connect(deployer).addSportEvents(
+            [teamA1, teamA2],
+            [teamB1, teamB2],
+            [startTime1, startTime2],
+            [endTime1, endTime2]
         )
     })
 
@@ -106,6 +99,120 @@ describe('SportOracle Contract Test', () => {
     })
 
 
+    it('Should add new sport events', async() => {
+
+        teamA1  = "Real Madrid"
+        teamB1 = "PSG"
+        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 5}).toSeconds()))
+        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 35}).toSeconds()))
+
+        const expectedEventId1 = ethers.utils.solidityKeccak256(
+            ["string", "string", "uint256", "uint256"],
+            [teamA1, teamB1, startTime1, endTime1]
+        )
+
+        teamA2  = "Chealsea"
+        teamB2  = "Dortmund"
+        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 10}).toSeconds()))
+        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 40}).toSeconds()))
+
+        const expectedEventId2 = ethers.utils.solidityKeccak256(
+            ["string", "string", "uint256", "uint256"],
+            [teamA2, teamB2, startTime2, endTime2]
+        )
+        const tx = await sportOracle.connect(deployer).addSportEvents(
+            [teamA1, teamA2],
+            [teamB1, teamB2],
+            [startTime1, startTime2],
+            [endTime1, endTime2]
+        )
+
+        const receipt = await tx.wait()
+
+        const actualEventId1 = receipt.events[0].args[0]
+        const actualEventId2 = receipt.events[1].args[0]
+
+        expect(actualEventId1).to.equal(expectedEventId1)
+        expect(actualEventId2).to.equal(expectedEventId2)
+
+    })
+
+    
+    it('Should only allow admin add new sport events', async() => {
+
+        teamA1  = "Real Madrid"
+        teamB1 = "PSG"
+        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 5}).toSeconds()))
+        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 35}).toSeconds()))
+
+        teamA2  = "Chealsea"
+        teamB2  = "Dortmund"
+        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 10}).toSeconds()))
+        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 40}).toSeconds()))
+
+        expect(sportOracle.connect(user).addSportEvents(
+            [teamA1, teamA2],
+            [teamB1, teamB2],
+            [startTime1, startTime2],
+            [endTime1, endTime2]
+        )).to.be.reverted
+    })
+
+
+
+    it('Should update sport events', async() => {
+
+        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 5}).toSeconds()))
+        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 35}).toSeconds()))
+        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 10}).toSeconds()))
+        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 40}).toSeconds()))
+
+        const tx = await sportOracle.connect(deployer).updateSportEvents(
+            [eventId1, eventId2],
+            [startTime1, startTime2],
+            [endTime1, endTime2]
+        )
+
+        const eventTx  = await sportOracle.getEvents([eventId1, eventId2])
+
+        expect(eventTx[0].startTimestamp).to.be.equal(startTime1)
+        expect(eventTx[1].startTimestamp).to.be.equal(startTime2)
+    })
+
+    
+    it('Should only allow admin update sport events', async() => {
+
+        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 5}).toSeconds()))
+        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 35}).toSeconds()))
+        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 10}).toSeconds()))
+        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 40}).toSeconds()))
+
+        expect(sportOracle.connect(user).updateSportEvents(
+            [eventId1, eventId2],
+            [startTime1, startTime2],
+            [endTime1, endTime2]
+        )).to.be.reverted
+    })
+
+
+    it('Should cancel sport events', async() => {
+
+        const tx = await sportOracle.connect(deployer).cancelSportEvents([eventId1, eventId2])
+
+        const receipt  = await tx.wait()
+
+        expect(receipt.events[0].args[0]).to.be.equal(eventId1)
+        expect(receipt.events[1].args[0]).to.be.equal(eventId2)
+    })
+
+    
+    it('Should only allow admin cancel sport events', async() => {
+
+        expect(sportOracle.connect(user).cancelSportEvents([eventId1, eventId2]
+        )).to.be.reverted
+    })
+    
+
     it('Should not add an existing sport event', async() => {
         const teamA  = "PSG"
         const teamB  = "Lyon"
@@ -119,6 +226,7 @@ describe('SportOracle Contract Test', () => {
             endTime
         )).to.be.reverted
     })
+
 
     it("Should returns false when there is NO event with this id", async ()=> {
         const nonExistentEventId = ethers.utils.solidityKeccak256(
@@ -142,9 +250,10 @@ describe('SportOracle Contract Test', () => {
 
     it("Should returns indexed sport events", async () => {
         const tx  = await sportOracle.getIndexedEvents([1,0])
+
         expect(tx[0].id).to.equal(eventId2)
-        expect(tx[0].teamA).to.equal(teamA2)
-        expect(tx[0].teamB).to.equal(teamB2)
+        expect(ethers.utils.toUtf8String(tx[0].teamA)).to.equal(teamA2)
+        expect(ethers.utils.toUtf8String(tx[0].teamB)).to.equal(teamB2)
         expect(tx[0].startTimestamp).to.equal(ethers.BigNumber.from(startTime2))
         expect(tx[0].endTimestamp).to.equal(ethers.BigNumber.from(endTime2))
         expect(tx[0].outcome).to.equal(ethers.BigNumber.from(0))
@@ -152,8 +261,8 @@ describe('SportOracle Contract Test', () => {
         expect(tx[0].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
 
         expect(tx[1].id).to.equal(eventId1)
-        expect(tx[1].teamA).to.equal(teamA1)
-        expect(tx[1].teamB).to.equal(teamB1)
+        expect(ethers.utils.toUtf8String(tx[1].teamA)).to.equal(teamA1)
+        expect(ethers.utils.toUtf8String(tx[1].teamB)).to.equal(teamB1)
         expect(tx[1].startTimestamp).to.equal(ethers.BigNumber.from(startTime1))
         expect(tx[1].endTimestamp).to.equal(ethers.BigNumber.from(endTime1))
         expect(tx[1].outcome).to.equal(ethers.BigNumber.from(0))
@@ -165,8 +274,8 @@ describe('SportOracle Contract Test', () => {
     it("Should returns specified sport events using id", async () => {
         const tx  = await sportOracle.getEvents([eventId2, eventId1])
         expect(tx[0].id).to.equal(eventId2)
-        expect(tx[0].teamA).to.equal(teamA2)
-        expect(tx[0].teamB).to.equal(teamB2)
+        expect(ethers.utils.toUtf8String(tx[0].teamA)).to.equal(teamA2)
+        expect(ethers.utils.toUtf8String(tx[0].teamB)).to.equal(teamB2)
         expect(tx[0].startTimestamp).to.equal(ethers.BigNumber.from(startTime2))
         expect(tx[0].endTimestamp).to.equal(ethers.BigNumber.from(endTime2))
         expect(tx[0].outcome).to.equal(ethers.BigNumber.from(0))
@@ -174,8 +283,8 @@ describe('SportOracle Contract Test', () => {
         expect(tx[0].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
 
         expect(tx[1].id).to.equal(eventId1)
-        expect(tx[1].teamA).to.equal(teamA1)
-        expect(tx[1].teamB).to.equal(teamB1)
+        expect(ethers.utils.toUtf8String(tx[1].teamA)).to.equal(teamA1)
+        expect(ethers.utils.toUtf8String(tx[1].teamB)).to.equal(teamB1)
         expect(tx[1].startTimestamp).to.equal(ethers.BigNumber.from(startTime1))
         expect(tx[1].endTimestamp).to.equal(ethers.BigNumber.from(endTime1))
         expect(tx[1].outcome).to.equal(ethers.BigNumber.from(0))
@@ -187,8 +296,8 @@ describe('SportOracle Contract Test', () => {
     it("Should returns all the sport events", async () => {
         const tx  = await sportOracle.getAllEvents(0,2)
         expect(tx[0].id).to.equal(eventId1)
-        expect(tx[0].teamA).to.equal(teamA1)
-        expect(tx[0].teamB).to.equal(teamB1)
+        expect(ethers.utils.toUtf8String(tx[0].teamA)).to.equal(teamA1)
+        expect(ethers.utils.toUtf8String(tx[0].teamB)).to.equal(teamB1)
         expect(tx[0].startTimestamp).to.equal(ethers.BigNumber.from(startTime1))
         expect(tx[0].endTimestamp).to.equal(ethers.BigNumber.from(endTime1))
         expect(tx[0].outcome).to.equal(ethers.BigNumber.from(0))
@@ -196,8 +305,8 @@ describe('SportOracle Contract Test', () => {
         expect(tx[0].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
 
         expect(tx[1].id).to.equal(eventId2)
-        expect(tx[1].teamA).to.equal(teamA2)
-        expect(tx[1].teamB).to.equal(teamB2)
+        expect(ethers.utils.toUtf8String(tx[1].teamA)).to.equal(teamA2)
+        expect(ethers.utils.toUtf8String(tx[1].teamB)).to.equal(teamB2)
         expect(tx[1].startTimestamp).to.equal(ethers.BigNumber.from(startTime2))
         expect(tx[1].endTimestamp).to.equal(ethers.BigNumber.from(endTime2))
         expect(tx[1].outcome).to.equal(ethers.BigNumber.from(0))
@@ -206,50 +315,56 @@ describe('SportOracle Contract Test', () => {
     })
 
 
-    it("Should declare predefined event outcome", async () => {
+    it("Should only declare predefined event outcome that ended", async () => {
 
-        const outcome = ethers.BigNumber.from(2)
         const realTeamAScore  = ethers.BigNumber.from(3)
-        const realTeamBScore  = ethers.BigNumber.from(1)
-        const tx  = await sportOracle.declareOutcome(
+        const realTeamBScore  = ethers.BigNumber.from(1) 
+
+        expect(sportOracle.declareOutcome(
             eventId1,
-            outcome,
             realTeamAScore,
             realTeamBScore
-        )
+        )).to.be.reverted
 
-        const eventTx  = await sportOracle.getEvents([eventId1])
+    })
 
-        expect(eventTx[0].outcome).to.equal(outcome)
-        expect(eventTx[0].realTeamAScore).to.equal(realTeamAScore)
-        expect(eventTx[0].realTeamBScore).to.equal(realTeamBScore)
+
+    it("Should only declare predefined events outcomes that ended", async () => {
+
+        const realTeamAScore1  = ethers.BigNumber.from(3)
+        const realTeamBScore1  = ethers.BigNumber.from(1)
+        const realTeamAScore2  = ethers.BigNumber.from(2)
+        const realTeamBScore2  = ethers.BigNumber.from(0) 
+
+        expect(sportOracle.declareOutcomes(
+            [eventId1, eventId2],
+            [realTeamAScore1, realTeamAScore2],
+            [realTeamBScore1, realTeamBScore2]
+        )).to.be.reverted
 
     })
 
 
     it("Should returns only the pending sport events", async () => {
 
-        const outcome = ethers.BigNumber.from(2)
-        const realTeamAScore  = ethers.BigNumber.from(3)
-        const realTeamBScore  = ethers.BigNumber.from(1)
-        await sportOracle.declareOutcome(
-            eventId1,
-            outcome,
-            realTeamAScore,
-            realTeamBScore
-        )
-
         const tx  = await sportOracle.getPendingEvents()
         expect(tx[0].id).to.equal(eventId2)
-        expect(tx[0].teamA).to.equal(teamA2)
-        expect(tx[0].teamB).to.equal(teamB2)
+        expect(ethers.utils.toUtf8String(tx[0].teamA)).to.equal(teamA2)
+        expect(ethers.utils.toUtf8String(tx[0].teamB)).to.equal(teamB2)
         expect(tx[0].startTimestamp).to.equal(ethers.BigNumber.from(startTime2))
         expect(tx[0].endTimestamp).to.equal(ethers.BigNumber.from(endTime2))
         expect(tx[0].outcome).to.equal(ethers.BigNumber.from(0))
         expect(tx[0].realTeamAScore).to.equal(ethers.BigNumber.from(-1))
         expect(tx[0].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
 
-        expect(tx[1]).to.be.undefined
+        expect(tx[1].id).to.equal(eventId1)
+        expect(ethers.utils.toUtf8String(tx[1].teamA)).to.equal(teamA1)
+        expect(ethers.utils.toUtf8String(tx[1].teamB)).to.equal(teamB1)
+        expect(tx[1].startTimestamp).to.equal(ethers.BigNumber.from(startTime1))
+        expect(tx[1].endTimestamp).to.equal(ethers.BigNumber.from(endTime1))
+        expect(tx[1].outcome).to.equal(ethers.BigNumber.from(0))
+        expect(tx[1].realTeamAScore).to.equal(ethers.BigNumber.from(-1))
+        expect(tx[1].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
     })
 
 
