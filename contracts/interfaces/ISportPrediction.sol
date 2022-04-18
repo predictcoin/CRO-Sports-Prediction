@@ -39,9 +39,16 @@ interface ISportPrediction {
     function getEvents(bytes32[] memory eventIds) 
         external view returns (SportEvent[] memory);
 
+    // get Live events
+    function getLiveEvents()
+        external view returns (SportEvent[] memory);
+
     // get events using indexes
     function getIndexedEvents(uint[] memory indexes) 
         external view returns (SportEvent[] memory);
+
+    function getEventsLength()
+        external view returns(uint);
 
     // get all events
     function getAllEvents(uint cursor, uint length) 
