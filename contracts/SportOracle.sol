@@ -375,6 +375,41 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         return output;
     }
 
+        /**
+     * @notice gets the unique ids of all pending events, in reverse chronological order
+     * @return output array of unique pending events ids
+     */
+    function getLiveEvents()
+        public view override
+        returns (ISportPrediction.SportEvent[] memory)
+    {
+        uint count = 0;
+
+        // Get the count of pending events
+        for (uint i = 0; i < events.length; i = i + 1) {
+            if (events[i].outcome == EventOutcome.Pending 
+                && events[i].startTimestamp <= block.timestamp)
+                count = count + 1;
+        }
+
+        // Collect up all the pending events
+        ISportPrediction.SportEvent[] memory output = 
+            new ISportPrediction.SportEvent[](count);
+
+        if (count > 0) {
+            uint index = 0;
+            for (uint n = events.length;  n > 0;  n = n - 1) {
+                if (events[n - 1].outcome == EventOutcome.Pending 
+                    && events[n-1].startTimestamp <= block.timestamp) {
+                    output[index] = events[n - 1];
+                    index = index + 1;
+                }
+            }
+        }
+
+        return output;
+    }
+
      
     /**
      * @notice gets the specified sport event and return its data
@@ -417,6 +452,9 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         return output;
     }
 
+    function getEventsLength() public view override returns (uint){
+        return events.length;
+    }
 
     /**
      * @notice gets the specified sport event and return its data
