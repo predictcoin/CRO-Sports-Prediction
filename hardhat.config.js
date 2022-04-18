@@ -22,13 +22,49 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+
+const mnemonic = process.env.MNEMONIC;
+
 module.exports = {
-  solidity: "0.8.4",
+  solidity: {
+    version: "0.8.4",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    crotestnet: {
+      url: "https://cronos-testnet-3.crypto.org:8545",
+      chainId: 338,
+      accounts: {
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+        inittialIndex: 0,
+        count: 10,
+      },
+    },
+    localhost: {
+      url: `http://localhost:8545`,
+      accounts: {
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+        inittialIndex: 0,
+        count: 10,
+      },
+      timeout: 150000,
+    },
+    cromainnet: {
+      url: "https://evm-cronos.crypto.org",
+      chainId: 25,
+      accounts: {
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+        inittialIndex: 0,
+        count: 10,
+      },
     },
   },
   gasReporter: {
@@ -39,6 +75,6 @@ module.exports = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   mocha: {
-    timeout: 40000
-  }
+    timeout: 40000,
+  },
 };
