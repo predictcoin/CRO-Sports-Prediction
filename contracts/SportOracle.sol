@@ -39,8 +39,11 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         bytes32 indexed _eventId,
         string  indexed _teamA,
         string  indexed _teamB,
+        string _league,
+        string _round,
         uint         _startTimestamp,
         uint         _endTimestamp,
+        uint16 _season,
         int8         _realTeamAScore,
         int8         _realTeamBScore
     );
@@ -125,8 +128,11 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
     function addSportEvent(
         string memory _teamA,
         string memory _teamB,
+        string memory _league,
+        string memory _round,
         uint          _startTimestamp,
-        uint          _endTimestamp
+        uint          _endTimestamp,
+        uint16          _season
     ) 
         public onlyAdmin returns (bytes32)
     {
@@ -139,8 +145,9 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         bytes32 eventId = keccak256(abi.encodePacked(
             _teamA,
             _teamB,
-            _startTimestamp,
-            _endTimestamp
+            _league,
+            _round,
+            _season
         ));
 
         // Make sure that the sport event is unique and does not exist yet
@@ -151,9 +158,12 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             eventId, 
             bytes(_teamA), 
             bytes(_teamB), 
+            bytes(_league),
+            bytes(_round),
             _startTimestamp,
             _endTimestamp, 
-            EventOutcome.Pending, 
+            EventOutcome.Pending,
+            _season, 
             -1, -1
         ));
         uint newIndex = events.length - 1;
@@ -163,8 +173,11 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             eventId,
             _teamA,
             _teamB,
+            _league,
+            _round,
             _startTimestamp,
             _endTimestamp,
+            _season,
             -1,
             -1
         );
@@ -184,8 +197,11 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
     function addSportEvents(
         string[] memory _teamAs,
         string[] memory _teamBs,
+        string[] memory _leagues,
+        string[] memory _rounds,
         uint[] memory _startTimestamps,
-        uint[] memory _endTimestamps
+        uint[] memory _endTimestamps,
+        uint16[] memory _seasons
     )
         external onlyAdmin returns (bytes32[] memory)
     {
@@ -193,7 +209,9 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
 
         for(uint8 i; uint256(i) < _teamAs.length; i++){
             eventIds[i] = addSportEvent(
-                _teamAs[i], _teamBs[i], _startTimestamps[i], _endTimestamps[i]
+                _teamAs[i], _teamBs[i], _leagues[i], 
+                _rounds[i], _startTimestamps[i], 
+                _endTimestamps[i], _seasons[i]
             );
         }
 
@@ -375,7 +393,7 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
         return output;
     }
 
-        /**
+    /**
      * @notice gets the unique ids of all pending events, in reverse chronological order
      * @return output array of unique pending events ids
      */
