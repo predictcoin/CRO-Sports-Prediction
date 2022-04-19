@@ -403,14 +403,14 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
     {
         uint count = 0;
 
-        // Get the count of pending events
+        // Get the count of live events
         for (uint i = 0; i < events.length; i = i + 1) {
             if (events[i].outcome == EventOutcome.Pending 
                 && events[i].startTimestamp <= block.timestamp)
                 count = count + 1;
         }
 
-        // Collect up all the pending events
+        // Collect up all the live events
         ISportPrediction.SportEvent[] memory output = 
             new ISportPrediction.SportEvent[](count);
 
