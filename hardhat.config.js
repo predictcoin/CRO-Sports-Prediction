@@ -5,6 +5,7 @@ require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
+require("@nomiclabs/hardhat-web3");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -36,7 +37,7 @@ module.exports = {
     },
   },
   networks: {
-    crotestnet: {
+    /*crotestnet: {
       url: "https://cronos-testnet-3.crypto.org:8545",
       chainId: 338,
       accounts: {
@@ -65,7 +66,7 @@ module.exports = {
         inittialIndex: 0,
         count: 10,
       },
-    },
+    },*/
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,

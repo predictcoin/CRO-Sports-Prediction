@@ -1,14 +1,14 @@
-const { ethers, upgrades } = require('hardhat')
+const { ethers, upgrades, waffle } = require('hardhat')
 const { expect } = require('chai')
-const { DateTime } = require('luxon')
+const { time } = require('@openzeppelin/test-helpers')
 const { it } = require('mocha')
 
 
 describe('SportOracle Contract Test', () => {
 
     let sportOracle, adminAddress,deployer,user, eventId1, eventId2, teamA1,
-    teamB1, startTime1, endTime1, teamA2, teamB2, startTime2, endTime2
-
+    teamB1, startTime1, endTime1, teamA2, teamB2, startTime2, endTime2, league1,
+    league2, season1, season2, round1, round2, timestamp, provider, elapsedTime
     beforeEach(async () => {
         [deployer, user] = await ethers.getSigners()
         
@@ -16,34 +16,50 @@ describe('SportOracle Contract Test', () => {
 
         const SportOracle = await ethers.getContractFactory("SportOracle")
         sportOracle = await upgrades.deployProxy(SportOracle,[adminAddress],{kind:"uups"})
+        provider = waffle.provider
+
+        timestamp = ethers.BigNumber.from((await provider.getBlock()).timestamp)
 
         // Add 2 sport events for test purpose
         teamA1  = "PSG"
         teamB1 = "Lyon"
-        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
-        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
+        league1 = "French Cup"
+        season1 = 2022
+        round1 = "Semi Final"
+        startTime1 = timestamp.add(parseInt(time.duration.hours(1)))
+        endTime1 = timestamp.add(parseInt(time.duration.hours(2)))
 
         eventId1 = ethers.utils.solidityKeccak256(
-            ["string", "string", "uint256", "uint256"],
-            [teamA1, teamB1, startTime1, endTime1]
+            ["string", "string", "string", "string", "uint16"],
+            [teamA1, teamB1, league1, round1, season1]
         )
 
         teamA2  = "Juventus"
         teamB2  = "Liverpool"
-        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
-        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
+        league2 = "International Champions Cup"
+        season2 = 2022
+        round2 = "Final"
+        startTime2 = timestamp.add(parseInt(time.duration.hours(1)))
+        endTime2 = timestamp.add(parseInt(time.duration.hours(2)))
 
         eventId2 = ethers.utils.solidityKeccak256(
-            ["string", "string", "uint256", "uint256"],
-            [teamA2, teamB2, startTime2, endTime2]
+            ["string", "string", "string", "string", "uint16"],
+            [teamA2, teamB2, league2, round2, season2]
         )
 
         await sportOracle.connect(deployer).addSportEvents(
             [teamA1, teamA2],
             [teamB1, teamB2],
+            [league1, league2],
+            [round1, round2],
             [startTime1, startTime2],
-            [endTime1, endTime2]
+            [endTime1, endTime2],
+            [season1, season2]
         )
+
+        elapsedTime = 7*24*60*60
+
+        
     })
 
     it('Should initialize contract variable', async() => {
@@ -62,21 +78,27 @@ describe('SportOracle Contract Test', () => {
     it('Should add a new sport event', async() => {
         const teamA  = "Real Madrid"
         const teamB  = "Chelsea"
-        const startTime = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 5}).toSeconds()))
-        const endTime = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 5, hours: 2}).toSeconds()))
+        const league = "UEFA Champions League"
+        const season = 2022
+        const round = "Round of 16"
+        const startTime = timestamp.add(parseInt(time.duration.hours(1)))
+        const endTime = timestamp.add(parseInt(time.duration.hours(2)))
 
         const tx = await sportOracle.connect(deployer).addSportEvent(
             teamA,
             teamB,
+            league,
+            round,
             startTime,
-            endTime
+            endTime,
+            season
         )
 
         const receipt = await tx.wait()
 
         const expectedEventId = ethers.utils.solidityKeccak256(
-            ["string", "string", "uint256", "uint256"],
-            [teamA, teamB, startTime, endTime]
+            ["string", "string", "string", "string", "uint16"],
+            [teamA, teamB, league, round, season]
         )
 
         const actualEventId = receipt.events[0].args[0]
@@ -87,14 +109,20 @@ describe('SportOracle Contract Test', () => {
     it('Should only allow admin add a new sport event', async() => {
         const teamA  = "Real Madrid"
         const teamB  = "Chelsea"
-        const startTime = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 5}).toSeconds()))
-        const endTime = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 5, hours: 2}).toSeconds()))
+        const league = "UEFA Champions League"
+        const season = 2022
+        const round = "Round of 16"
+        const startTime = timestamp.add(parseInt(time.duration.hours(1)))
+        const endTime = timestamp.add(parseInt(time.duration.hours(2)))
 
         expect(sportOracle.connect(user).addSportEvent(
             teamA,
             teamB,
+            league,
+            round,
             startTime,
-            endTime
+            endTime,
+            season
         )).to.be.reverted
     })
 
@@ -103,28 +131,37 @@ describe('SportOracle Contract Test', () => {
 
         teamA1  = "Real Madrid"
         teamB1 = "PSG"
-        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 5}).toSeconds()))
-        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 35}).toSeconds()))
+        league1 = "UEFA Champions League"
+        season1 = 2022
+        round1 = "Quarter Final"
+        startTime1 = timestamp.add(parseInt(time.duration.hours(1)))
+        endTime1 = timestamp.add(parseInt(time.duration.hours(2)))
 
         const expectedEventId1 = ethers.utils.solidityKeccak256(
-            ["string", "string", "uint256", "uint256"],
-            [teamA1, teamB1, startTime1, endTime1]
+            ["string", "string", "string", "string", "uint16"],
+            [teamA1, teamB1, league1, round1, season1]
         )
 
         teamA2  = "Chealsea"
         teamB2  = "Dortmund"
-        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 10}).toSeconds()))
-        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 40}).toSeconds()))
-
+        league2 = "UEFA Champions League"
+        season2 = 2022
+        round2 = "Quarter Final"
+        startTime2 = timestamp.add(parseInt(time.duration.hours(1)))
+        endTime2 = timestamp.add(parseInt(time.duration.hours(2)))
+        
         const expectedEventId2 = ethers.utils.solidityKeccak256(
-            ["string", "string", "uint256", "uint256"],
-            [teamA2, teamB2, startTime2, endTime2]
+            ["string", "string", "string", "string", "uint16"],
+            [teamA2, teamB2, league2, round2, season2]
         )
         const tx = await sportOracle.connect(deployer).addSportEvents(
             [teamA1, teamA2],
             [teamB1, teamB2],
+            [league1, league2],
+            [round1, round2],
             [startTime1, startTime2],
-            [endTime1, endTime2]
+            [endTime1, endTime2],
+            [season1, season2],
         )
 
         const receipt = await tx.wait()
@@ -142,19 +179,28 @@ describe('SportOracle Contract Test', () => {
 
         teamA1  = "Real Madrid"
         teamB1 = "PSG"
-        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 5}).toSeconds()))
-        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 35}).toSeconds()))
-
+        league1 = "UEFA Champions League"
+        season1 = 2022
+        round1 = "Quarter Final"
+        startTime1 = timestamp.add(parseInt(time.duration.hours(1)))
+        endTime1 = timestamp.add(parseInt(time.duration.hours(2)))
+        
         teamA2  = "Chealsea"
         teamB2  = "Dortmund"
-        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 10}).toSeconds()))
-        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 40}).toSeconds()))
+        league2 = "UEFA Champions League"
+        season2 = 2022
+        round2 = "Quarter Final"
+        startTime2 = timestamp.add(parseInt(time.duration.hours(1)))
+        endTime2 = timestamp.add(parseInt(time.duration.hours(2)))
 
         expect(sportOracle.connect(user).addSportEvents(
             [teamA1, teamA2],
             [teamB1, teamB2],
+            [league1, league2],
+            [round1, round2],
             [startTime1, startTime2],
-            [endTime1, endTime2]
+            [endTime1, endTime2],
+            [season1, season2],
         )).to.be.reverted
     })
 
@@ -162,10 +208,10 @@ describe('SportOracle Contract Test', () => {
 
     it('Should update sport events', async() => {
 
-        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 5}).toSeconds()))
-        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 35}).toSeconds()))
-        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 10}).toSeconds()))
-        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 40}).toSeconds()))
+        startTime1 = timestamp.add(parseInt(time.duration.minutes(10)))
+        endTime1 = timestamp.add(parseInt(time.duration.minutes(30)))
+        startTime2 = timestamp.add(parseInt(time.duration.minutes(5)))
+        endTime2 = timestamp.add(parseInt(time.duration.minutes(45)))
 
         const tx = await sportOracle.connect(deployer).updateSportEvents(
             [eventId1, eventId2],
@@ -182,10 +228,10 @@ describe('SportOracle Contract Test', () => {
     
     it('Should only allow admin update sport events', async() => {
 
-        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 5}).toSeconds()))
-        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 35}).toSeconds()))
-        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 10}).toSeconds()))
-        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({minutes: 40}).toSeconds()))
+        startTime1 = timestamp.add(parseInt(time.duration.minutes(10)))
+        endTime1 = timestamp.add(parseInt(time.duration.minutes(30)))
+        startTime2 = timestamp.add(parseInt(time.duration.minutes(5)))
+        endTime2 = timestamp.add(parseInt(time.duration.minutes(45)))
 
         expect(sportOracle.connect(user).updateSportEvents(
             [eventId1, eventId2],
@@ -216,8 +262,8 @@ describe('SportOracle Contract Test', () => {
     it('Should not add an existing sport event', async() => {
         const teamA  = "PSG"
         const teamB  = "Lyon"
-        const startTime = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
-        const endTime = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
+        const startTime = timestamp.add(parseInt(time.duration.hours(1)))
+        const endTime = timestamp.add(parseInt(time.duration.hours(2)))
 
         expect(sportOracle.addSportEvent(
             teamA,
@@ -230,11 +276,12 @@ describe('SportOracle Contract Test', () => {
 
     it("Should returns false when there is NO event with this id", async ()=> {
         const nonExistentEventId = ethers.utils.solidityKeccak256(
-            ["string", "string", "uint256", "uint256"],
+            ["string", "string", "string", "string", "uint16"],
             ["Barcelona", 
             "Madrid",
-            ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 5}).toSeconds())),
-            ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 5, hours: 2}).toSeconds())) 
+            "Spanish Laliga",
+            "Final",
+            2022
             ]
         )
 
@@ -314,6 +361,43 @@ describe('SportOracle Contract Test', () => {
         expect(tx[1].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
     })
 
+   
+    it("Should declare predefined event outcome that ended", async () => {
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        const realTeamAScore  = ethers.BigNumber.from(3)
+        const realTeamBScore  = ethers.BigNumber.from(1) 
+
+        await sportOracle.declareOutcome(
+            eventId1,
+            realTeamAScore,
+            realTeamBScore
+        )
+
+        const tx  = await sportOracle.getEvents([eventId1])
+
+        expect(tx[0].realTeamAScore).to.equal(realTeamAScore)
+        expect(tx[0].realTeamBScore).to.equal(realTeamBScore)
+
+    })
+
+
+    it("Should only allow admin declare predefined event outcome that ended", async () => {
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        const realTeamAScore  = ethers.BigNumber.from(3)
+        const realTeamBScore  = ethers.BigNumber.from(1) 
+
+        expect(sportOracle.connect(user).declareOutcome(
+            eventId1,
+            realTeamAScore,
+            realTeamBScore
+        )).to.be.reverted
+
+    })
+
 
     it("Should only declare predefined event outcome that ended", async () => {
 
@@ -329,6 +413,31 @@ describe('SportOracle Contract Test', () => {
     })
 
 
+    it("Should declare predefined events outcomes that ended", async () => {
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        const realTeamAScore1  = ethers.BigNumber.from(3)
+        const realTeamBScore1  = ethers.BigNumber.from(1)
+        const realTeamAScore2  = ethers.BigNumber.from(2)
+        const realTeamBScore2  = ethers.BigNumber.from(0) 
+
+        await sportOracle.declareOutcomes(
+            [eventId1, eventId2],
+            [realTeamAScore1, realTeamAScore2],
+            [realTeamBScore1, realTeamBScore2]
+        )
+
+        const tx  = await sportOracle.getEvents([eventId1,eventId2])
+
+        expect(tx[0].realTeamAScore).to.equal(realTeamAScore1)
+        expect(tx[0].realTeamBScore).to.equal(realTeamBScore1)
+        expect(tx[1].realTeamAScore).to.equal(realTeamAScore2)
+        expect(tx[1].realTeamBScore).to.equal(realTeamBScore2)
+
+    })
+
+
     it("Should only declare predefined events outcomes that ended", async () => {
 
         const realTeamAScore1  = ethers.BigNumber.from(3)
@@ -340,6 +449,29 @@ describe('SportOracle Contract Test', () => {
             [eventId1, eventId2],
             [realTeamAScore1, realTeamAScore2],
             [realTeamBScore1, realTeamBScore2]
+        )).to.be.reverted
+
+    })
+
+
+    it("Should only declare predefined event outcome that exists", async () => {
+
+        const realTeamAScore = ethers.BigNumber.from(3)
+        const realTeamBScore = ethers.BigNumber.from(1)
+        const nonExistentEventId = ethers.utils.solidityKeccak256(
+            ["string", "string", "string", "string", "uint16"],
+            ["Barcelona", 
+            "Madrid",
+            "Spanish Laliga",
+            "Final",
+            2022
+            ]
+        )
+
+        expect(sportOracle.declareOutcome(
+            nonExistentEventId,
+            realTeamAScore,
+            realTeamBScore
         )).to.be.reverted
 
     })
@@ -365,6 +497,14 @@ describe('SportOracle Contract Test', () => {
         expect(tx[1].outcome).to.equal(ethers.BigNumber.from(0))
         expect(tx[1].realTeamAScore).to.equal(ethers.BigNumber.from(-1))
         expect(tx[1].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
+    })
+
+
+    it("Should returns events length", async () => {
+        const tx  = await sportOracle.getEventsLength()
+
+        expect(tx).to.equal(ethers.BigNumber.from(2))
+
     })
 
 
