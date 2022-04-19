@@ -9,7 +9,8 @@ describe('SportPrediction Contract Test', () => {
 
     let token, treasury, deployer, user, provider, sportPrediction, sportOracle,
     eventId1, eventId2, teamA1, teamB1, startTime1, endTime1, teamA2, teamB2, 
-    startTime2, endTime2
+    startTime2, endTime2, league1,league2, season1, season2, round1, round2, 
+    timestamp, elapsedTime
 
     beforeEach(async () => {
         [deployer, user] = await ethers.getSigners()
@@ -32,33 +33,46 @@ describe('SportPrediction Contract Test', () => {
               50],
               {kind: "uups"})
 
+        timestamp = ethers.BigNumber.from((await provider.getBlock()).timestamp)
+
         // Add 2 sport events for test purpose
         teamA1  = "PSG"
         teamB1 = "Lyon"
-        startTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
-        endTime1 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
+        league1 = "French Cup"
+        season1 = 2022
+        round1 = "Semi Final"
+        startTime1 = timestamp.add(parseInt(time.duration.hours(1)))
+        endTime1 = timestamp.add(parseInt(time.duration.hours(2)))
 
         eventId1 = ethers.utils.solidityKeccak256(
-            ["string", "string", "uint256", "uint256"],
-            [teamA1, teamB1, startTime1, endTime1]
+            ["string", "string", "string", "string", "uint16"],
+            [teamA1, teamB1, league1, round1, season1]
         )
 
         teamA2  = "Juventus"
         teamB2  = "Liverpool"
-        startTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4}).toSeconds()))
-        endTime2 = ethers.BigNumber.from(parseInt(DateTime.now().plus({days: 4, hours: 2}).toSeconds()))
+        league2 = "International Champions Cup"
+        season2 = 2022
+        round2 = "Final"
+        startTime2 = timestamp.add(parseInt(time.duration.hours(1)))
+        endTime2 = timestamp.add(parseInt(time.duration.hours(2)))
 
         eventId2 = ethers.utils.solidityKeccak256(
-            ["string", "string", "uint256", "uint256"],
-            [teamA2, teamB2, startTime2, endTime2]
+            ["string", "string", "string", "string", "uint16"],
+            [teamA2, teamB2, league2, round2, season2]
         )
 
         await sportOracle.connect(deployer).addSportEvents(
             [teamA1, teamA2],
             [teamB1, teamB2],
+            [league1, league2],
+            [round1, round2],
             [startTime1, startTime2],
-            [endTime1, endTime2]
+            [endTime1, endTime2],
+            [season1, season2]
         )
+
+        elapsedTime = 1*24*60*60
 
         
     })
@@ -202,6 +216,19 @@ describe('SportPrediction Contract Test', () => {
     })
 
 
+    it('Should only predict on live sport event', async() => {
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        const predictAmount = ethers.utils.parseUnits("100")
+        await token.approve(sportPrediction.address, predictAmount)
+        expect(sportPrediction.predict(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3))).to.be.reverted
+    })
+
+
     it('Should only predict on sport event once', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
         await token.approve(sportPrediction.address, predictAmount)
@@ -294,6 +321,133 @@ describe('SportPrediction Contract Test', () => {
             ]
         )
         expect(sportPrediction.userPredictStatus(deployer.getAddress(),[nonExistentEventId])).to.be.reverted
+    })
+
+
+    it('Should returns false if the user predicted wrong score ', async() => {
+        const predictAmount = ethers.utils.parseUnits("100")
+        await token.approve(sportPrediction.address, predictAmount)
+        await sportPrediction.predict(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3))
+
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        await sportOracle.declareOutcome(
+            eventId1,
+            ethers.BigNumber.from(2),
+            ethers.BigNumber.from(3)
+        )
+
+        const tx = await sportPrediction.userPredictStatus(deployer.getAddress(),[eventId1])
+        expect(tx[0]).to.be.false
+    })
+
+
+    it('Should returns true if the user predicted correct score ', async() => {
+        const predictAmount = ethers.utils.parseUnits("100")
+        await token.approve(sportPrediction.address, predictAmount)
+        await sportPrediction.predict(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3))
+
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        await sportOracle.declareOutcome(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3)
+        )
+
+        const tx = await sportPrediction.userPredictStatus(deployer.getAddress(),[eventId1])
+        expect(tx[0]).to.be.true
+    })
+
+
+    it('Should allow only winner to claim reward for a sport event', async() => {
+        const predictAmount = ethers.utils.parseUnits("100")
+        await token.approve(sportPrediction.address, predictAmount)
+        await sportPrediction.predict(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3))
+
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        await sportOracle.declareOutcome(
+            eventId1,
+            ethers.BigNumber.from(2),
+            ethers.BigNumber.from(3)
+        )
+
+        expect(sportPrediction.claim(eventId1)).to.be.reverted
+    })
+
+
+    it('Should claim reward for a sport event', async() => {
+        const predictAmount = ethers.utils.parseUnits("100")
+        await token.approve(sportPrediction.address, predictAmount)
+        await sportPrediction.predict(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3))
+
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        await sportOracle.declareOutcome(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3)
+        )
+
+        const amount = ethers.utils.parseUnits("10000")
+        await token.approve(treasury.address, amount)
+        await token.transfer(treasury.address, amount)
+
+        await treasury.setSportPredictionAddress(sportPrediction.address)
+        await token.approve(deployer.getAddress(), predictAmount)
+        const tx = await sportPrediction.claim([eventId1])
+        const receipt  = await tx.wait()
+        expect(receipt.events[2].args[0]).to.equal(await deployer.getAddress())
+        expect(receipt.events[2].args[1]).to.equal(eventId1)
+        expect(receipt.events[2].args[2]).to.equal(predictAmount)
+
+    })
+
+
+    it("Should allow only winner that does'nt claim reward to claim for a sport event", async() => {
+        const predictAmount = ethers.utils.parseUnits("100")
+        await token.approve(sportPrediction.address, predictAmount)
+        await sportPrediction.predict(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3))
+
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        await sportOracle.declareOutcome(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3)
+        )
+
+        const amount = ethers.utils.parseUnits("10000")
+        await token.approve(treasury.address, amount)
+        await token.transfer(treasury.address, amount)
+
+        await treasury.setSportPredictionAddress(sportPrediction.address)
+        await token.approve(deployer.getAddress(), predictAmount)
+        const tx = await sportPrediction.claim([eventId1])
+
+        expect(sportPrediction.claim([eventId1])).to.be.reverted
+
     })
 
 })

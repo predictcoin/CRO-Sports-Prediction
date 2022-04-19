@@ -57,7 +57,7 @@ describe('SportOracle Contract Test', () => {
             [season1, season2]
         )
 
-        elapsedTime = 7*24*60*60
+        elapsedTime = 1*24*60*60
 
         
     })

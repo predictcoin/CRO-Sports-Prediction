@@ -37,7 +37,7 @@ module.exports = {
     },
   },
   networks: {
-    /*crotestnet: {
+    crotestnet: {
       url: "https://cronos-testnet-3.crypto.org:8545",
       chainId: 338,
       accounts: {
@@ -66,7 +66,7 @@ module.exports = {
         inittialIndex: 0,
         count: 10,
       },
-    },*/
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
