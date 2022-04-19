@@ -67,6 +67,14 @@ module.exports = {
         count: 10,
       },
     },
+    hardhat: {
+      accounts: {
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+        inittialIndex: 0,
+        count: 10,
+      },
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
