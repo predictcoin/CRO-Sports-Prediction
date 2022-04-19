@@ -263,8 +263,9 @@ describe('SportPrediction Contract Test', () => {
             ethers.BigNumber.from(3))).to.be.reverted
     })
 
-    it('Should returns user predictions on sport events', async() => {
+    it('Should return user predictions on sport events', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
+        const multiplier = await sportPrediction.getMultiplier()
         await token.approve(sportPrediction.address, predictAmount)
         await sportPrediction.predict(
             eventId1,
@@ -275,7 +276,7 @@ describe('SportPrediction Contract Test', () => {
         expect(tx[0].user).to.equal(await deployer.getAddress())
         expect(tx[0].eventId).to.equal(eventId1)
         expect(tx[0].amount).to.equal(predictAmount)
-        expect(tx[0].reward).to.equal(ethers.BigNumber.from(0))
+        expect(tx[0].reward).to.equal(ethers.BigNumber.from(predictAmount).mul(multiplier));
         expect(tx[0].teamAScore).to.equal(ethers.BigNumber.from(1))
         expect(tx[0].teamBScore).to.equal(ethers.BigNumber.from(3))
         expect(tx[0].predicted).to.be.true
@@ -391,6 +392,7 @@ describe('SportPrediction Contract Test', () => {
 
     it('Should claim reward for a sport event', async() => {
         const predictAmount = ethers.utils.parseUnits("100")
+        const multiplier = await sportPrediction.getMultiplier();
         await token.approve(sportPrediction.address, predictAmount)
         await sportPrediction.predict(
             eventId1,
@@ -411,12 +413,14 @@ describe('SportPrediction Contract Test', () => {
         await token.transfer(treasury.address, amount)
 
         await treasury.setSportPredictionAddress(sportPrediction.address)
-        await token.approve(deployer.getAddress(), predictAmount)
+        // await token.approve(deployer.getAddress(), predictAmount)
         const tx = await sportPrediction.claim([eventId1])
         const receipt  = await tx.wait()
         expect(receipt.events[2].args[0]).to.equal(await deployer.getAddress())
         expect(receipt.events[2].args[1]).to.equal(eventId1)
-        expect(receipt.events[2].args[2]).to.equal(predictAmount)
+        expect(receipt.events[2].args[2]).to.equal(
+          ethers.BigNumber.from(predictAmount).mul(multiplier)
+        );
 
     })
 

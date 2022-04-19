@@ -241,7 +241,7 @@ contract SportPrediction is
      * @notice get the reward multiplier
      * @return _multiplier reward multiplier
      */
-    function getMultiplier()private view returns(uint)
+    function getMultiplier()public view returns(uint)
     {
         return multiplier;
     }
@@ -254,6 +254,16 @@ contract SportPrediction is
         public view returns (ISportPrediction.SportEvent[] memory)
     {
         return sportOracle.getPendingEvents(); 
+    }
+
+    /**
+    * @notice gets a list of all currently live events
+    * @return liveEvents the list of live sport events 
+    */
+    function getLiveEvents()
+        public view returns (ISportPrediction.SportEvent[] memory)
+    {
+        return sportOracle.getLiveEvents(); 
     }
 
     /**
@@ -305,7 +315,7 @@ contract SportPrediction is
                 msg.sender,
                 _eventId,
                 predictAmount,
-                0,
+                predictAmount.mul(getMultiplier()),
                 _teamAScore,
                 _teamBScore,
                 true,
@@ -418,10 +428,14 @@ contract SportPrediction is
             
             Prediction storage userPrediction = eventToPrediction[_eventIds[i]][msg.sender];
             userPrediction.claimed = true;
-            userPrediction.reward = cancelled ? predictAmount : predictAmount.mul(getMultiplier());
-            treasury.withdrawToken(address(crp), msg.sender, userPrediction.reward);
+            uint reward = userPrediction.reward;
+            if(cancelled){
+                reward = userPrediction.amount;
+                userPrediction.reward = 0;
+            }
+            treasury.withdrawToken(address(crp), msg.sender, reward);
 
-            emit Claim(msg.sender, _eventIds[i], predictAmount);
+            emit Claim(msg.sender, _eventIds[i], reward);
         }
 
     } 

@@ -394,13 +394,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
     }
 
     /**
-<<<<<<< feature/additional-tests
      * @notice gets the unique ids of all live events, in reverse chronological order
      * @return output array of unique live events ids
-=======
-     * @notice gets the unique ids of all pending events, in reverse chronological order
-     * @return output array of unique pending events ids
->>>>>>> master
      */
     function getLiveEvents()
         public view override
@@ -408,22 +403,14 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
     {
         uint count = 0;
 
-<<<<<<< feature/additional-tests
         // Get the count of live events
-=======
-        // Get the count of pending events
->>>>>>> master
         for (uint i = 0; i < events.length; i = i + 1) {
             if (events[i].outcome == EventOutcome.Pending 
                 && events[i].startTimestamp <= block.timestamp)
                 count = count + 1;
         }
 
-<<<<<<< feature/additional-tests
         // Collect up all the live events
-=======
-        // Collect up all the pending events
->>>>>>> master
         ISportPrediction.SportEvent[] memory output = 
             new ISportPrediction.SportEvent[](count);
 
