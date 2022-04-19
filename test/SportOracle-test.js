@@ -585,6 +585,33 @@ describe('SportOracle Contract Test', () => {
     })
 
 
+    it("Should returns only the live sport events", async () => {
+
+        elapsedTime = 70*60
+
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+        const tx  = await sportOracle.getLiveEvents()
+        expect(tx[0].id).to.equal(eventId2)
+        expect(ethers.utils.toUtf8String(tx[0].teamA)).to.equal(teamA2)
+        expect(ethers.utils.toUtf8String(tx[0].teamB)).to.equal(teamB2)
+        expect(tx[0].startTimestamp).to.equal(ethers.BigNumber.from(startTime2))
+        expect(tx[0].endTimestamp).to.equal(ethers.BigNumber.from(endTime2))
+        expect(tx[0].outcome).to.equal(ethers.BigNumber.from(0))
+        expect(tx[0].realTeamAScore).to.equal(ethers.BigNumber.from(-1))
+        expect(tx[0].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
+
+        expect(tx[1].id).to.equal(eventId1)
+        expect(ethers.utils.toUtf8String(tx[1].teamA)).to.equal(teamA1)
+        expect(ethers.utils.toUtf8String(tx[1].teamB)).to.equal(teamB1)
+        expect(tx[1].startTimestamp).to.equal(ethers.BigNumber.from(startTime1))
+        expect(tx[1].endTimestamp).to.equal(ethers.BigNumber.from(endTime1))
+        expect(tx[1].outcome).to.equal(ethers.BigNumber.from(0))
+        expect(tx[1].realTeamAScore).to.equal(ethers.BigNumber.from(-1))
+        expect(tx[1].realTeamBScore).to.equal(ethers.BigNumber.from(-1))
+    })
+
+
     it("Should returns events length", async () => {
         const tx  = await sportOracle.getEventsLength()
 
