@@ -241,6 +241,41 @@ describe('SportOracle Contract Test', () => {
     })
 
 
+
+    it('Should only update sport event that is not live', async() => {
+
+        elapsedTime = 70*60
+
+        await ethers.provider.send('evm_increaseTime', [elapsedTime])
+        await ethers.provider.send('evm_mine')
+
+        startTime1 = timestamp.add(parseInt(time.duration.minutes(10)))
+        endTime1 = timestamp.add(parseInt(time.duration.minutes(30)))
+
+        expect(sportOracle.connect(deployer).updateSportEvents(
+            [eventId1],
+            [startTime1],
+            [endTime1]
+        )).to.be.reverted
+    })
+
+
+
+    it('Should only update sport event that has not ended', async() => {
+        await ethers.provider.send('evm_increaseTime', [elapsedTime])
+        await ethers.provider.send('evm_mine')
+
+        startTime1 = timestamp.add(parseInt(time.duration.minutes(10)))
+        endTime1 = timestamp.add(parseInt(time.duration.minutes(30)))
+
+        expect(sportOracle.connect(deployer).updateSportEvents(
+            [eventId1],
+            [startTime1],
+            [endTime1]
+        )).to.be.reverted
+    })
+
+
     it('Should cancel sport events', async() => {
 
         const tx = await sportOracle.connect(deployer).cancelSportEvents([eventId1, eventId2])
@@ -255,6 +290,15 @@ describe('SportOracle Contract Test', () => {
     it('Should only allow admin cancel sport events', async() => {
 
         expect(sportOracle.connect(user).cancelSportEvents([eventId1, eventId2]
+        )).to.be.reverted
+    })
+
+
+    it('Should only update sport event that is not cancelled', async() => {
+
+        await sportOracle.connect(deployer).cancelSportEvents([eventId1])
+
+        expect(sportOracle.connect(deployer).updateSportEvents([eventId1]
         )).to.be.reverted
     })
     
@@ -403,6 +447,47 @@ describe('SportOracle Contract Test', () => {
 
         const realTeamAScore  = ethers.BigNumber.from(3)
         const realTeamBScore  = ethers.BigNumber.from(1) 
+
+        expect(sportOracle.declareOutcome(
+            eventId1,
+            realTeamAScore,
+            realTeamBScore
+        )).to.be.reverted
+
+    })
+
+
+    it("Should only declare predefined event outcome that is not live", async () => {
+
+        elapsedTime = 70*60
+
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        const realTeamAScore  = ethers.BigNumber.from(3)
+        const realTeamBScore  = ethers.BigNumber.from(1) 
+
+        expect(sportOracle.declareOutcome(
+            eventId1,
+            realTeamAScore,
+            realTeamBScore
+        )).to.be.reverted
+
+    })
+
+
+    it("Should only declare predefined event outcome that is not declared", async () => {
+        await ethers.provider.send('evm_increaseTime', [elapsedTime]);
+        await ethers.provider.send('evm_mine');
+
+        const realTeamAScore  = ethers.BigNumber.from(3)
+        const realTeamBScore  = ethers.BigNumber.from(1) 
+
+        await sportOracle.declareOutcome(
+            eventId1,
+            realTeamAScore,
+            realTeamBScore
+        )
 
         expect(sportOracle.declareOutcome(
             eventId1,
