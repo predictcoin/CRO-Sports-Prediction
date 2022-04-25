@@ -267,6 +267,38 @@ contract SportPrediction is
     }
 
     /**
+    * @notice gets a list of events, fails if an eventId does not exist
+    * @param _eventIds the ids of events
+    * @return the list of events needed 
+    */
+    function getEvents(bytes32[] memory _eventIds)
+        public view returns (ISportPrediction.SportEvent[] memory)    
+    {
+        return sportOracle.getEvents(_eventIds);
+    }
+
+    /**
+    * @notice gets a list of events
+    * @param indexes the ids of events
+    * @return the list of events needed 
+    */
+    function getIndexedEvents(uint[] memory indexes)
+        public view returns (ISportPrediction.SportEvent[] memory)    
+    {
+        return sportOracle.getIndexedEvents(indexes);
+    }
+
+    /**
+    * @notice gets the total number of events
+    * @return the total number of events
+    */
+    function getEventsLength()
+        public view returns (uint)
+    {
+        return sportOracle.getEventsLength();
+    }
+
+    /**
      * @notice determines whether or not the user has already predict on the given sport event
      * @param _user address of a player
      * @param _eventId id of a event 
