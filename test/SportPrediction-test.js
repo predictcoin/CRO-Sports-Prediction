@@ -454,4 +454,26 @@ describe('SportPrediction Contract Test', () => {
 
     })
 
+
+    it("Should returns specified prediction using id", async () => {
+
+        const predictAmount = ethers.utils.parseUnits("100")
+        const multiplier = await sportPrediction.getMultiplier()
+        await token.approve(sportPrediction.address, predictAmount)
+        await sportPrediction.predict(
+            eventId1,
+            ethers.BigNumber.from(1),
+            ethers.BigNumber.from(3))
+
+        const tx  = await sportPrediction.getPredictions(eventId1)
+        expect(tx[0].user).to.equal(await deployer.getAddress())
+        expect(tx[0].eventId).to.equal(eventId1)
+        expect(tx[0].amount).to.equal(predictAmount)
+        expect(tx[0].reward).to.equal(ethers.BigNumber.from(predictAmount).mul(multiplier));
+        expect(tx[0].teamAScore).to.equal(ethers.BigNumber.from(1))
+        expect(tx[0].teamBScore).to.equal(ethers.BigNumber.from(3))
+        expect(tx[0].predicted).to.be.true
+        expect(tx[0].claimed).to.be.false
+    })
+
 })
