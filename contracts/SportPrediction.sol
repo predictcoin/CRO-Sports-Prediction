@@ -59,6 +59,7 @@ contract SportPrediction is
     */
     uint public maxPredictions;
 
+
     /**
     * @dev total predictions per event
     */
@@ -76,6 +77,12 @@ contract SportPrediction is
      * ie. a map composed (player address => predictions) pairs
      */
     mapping(address => Prediction[]) private userToPredictions;
+
+
+    /**
+     *  @dev for any given event, get a list of all predictions that have been made for that event
+     */
+    mapping(bytes32 => Prediction[]) private eventToPredictions;
 
      /**
      * @dev payload of a prediction on a sport event
@@ -359,6 +366,11 @@ contract SportPrediction is
         Prediction[] storage userPredictions = userToPredictions[msg.sender]; 
         userPredictions.push(prediction);
 
+        Prediction[] storage predictions = eventToPredictions[_eventId];
+        predictions.push(prediction);
+
+        
+
         eventIdsToPredictionAmount[_eventId] += 1;
 
         emit PredictionPlaced(
@@ -391,6 +403,22 @@ contract SportPrediction is
         return output;
 
     }
+
+
+    /**
+     * @notice get predictions on event(s)
+     * @return output return array of predictions
+     */
+    function getPredictions(bytes32 _eventId)
+        public
+        view returns(Prediction[] memory)
+    {
+        Prediction[] memory output = eventToPredictions[_eventId];
+
+        return output;
+
+    }
+
 
     function getAllUserPredictions(address _user)
         public  
