@@ -30,8 +30,8 @@ describe('SportOracle Contract Test', () => {
         endTime1 = timestamp.add(parseInt(time.duration.hours(2)))
 
         eventId1 = ethers.utils.solidityKeccak256(
-            ["string", "string", "string", "string", "uint16"],
-            [teamA1, teamB1, league1, round1, season1]
+            ["string", "string", "string", "string", "uint16", "uint"],
+            [teamA1, teamB1, league1, round1, season1, startTime1]
         )
 
         teamA2  = "Juventus"
@@ -43,8 +43,8 @@ describe('SportOracle Contract Test', () => {
         endTime2 = timestamp.add(parseInt(time.duration.hours(2)))
 
         eventId2 = ethers.utils.solidityKeccak256(
-            ["string", "string", "string", "string", "uint16"],
-            [teamA2, teamB2, league2, round2, season2]
+            ["string", "string", "string", "string", "uint16", "uint"],
+            [teamA2, teamB2, league2, round2, season2, startTime1]
         )
 
         await sportOracle.connect(deployer).addSportEvents(
@@ -97,8 +97,8 @@ describe('SportOracle Contract Test', () => {
         const receipt = await tx.wait()
 
         const expectedEventId = ethers.utils.solidityKeccak256(
-            ["string", "string", "string", "string", "uint16"],
-            [teamA, teamB, league, round, season]
+            ["string", "string", "string", "string", "uint16", "uint"],
+            [teamA, teamB, league, round, season, startTime]
         )
 
         const actualEventId = receipt.events[0].args[0]
@@ -138,8 +138,8 @@ describe('SportOracle Contract Test', () => {
         endTime1 = timestamp.add(parseInt(time.duration.hours(2)))
 
         const expectedEventId1 = ethers.utils.solidityKeccak256(
-            ["string", "string", "string", "string", "uint16"],
-            [teamA1, teamB1, league1, round1, season1]
+            ["string", "string", "string", "string", "uint16", "uint"],
+            [teamA1, teamB1, league1, round1, season1, startTime1]
         )
 
         teamA2  = "Chealsea"
@@ -151,8 +151,8 @@ describe('SportOracle Contract Test', () => {
         endTime2 = timestamp.add(parseInt(time.duration.hours(2)))
         
         const expectedEventId2 = ethers.utils.solidityKeccak256(
-            ["string", "string", "string", "string", "uint16"],
-            [teamA2, teamB2, league2, round2, season2]
+            ["string", "string", "string", "string", "uint16", "uint"],
+            [teamA2, teamB2, league2, round2, season2, startTime1]
         )
         const tx = await sportOracle.connect(deployer).addSportEvents(
             [teamA1, teamA2],
@@ -205,77 +205,6 @@ describe('SportOracle Contract Test', () => {
     })
 
 
-
-    it('Should update sport events', async() => {
-
-        startTime1 = timestamp.add(parseInt(time.duration.minutes(10)))
-        endTime1 = timestamp.add(parseInt(time.duration.minutes(30)))
-        startTime2 = timestamp.add(parseInt(time.duration.minutes(5)))
-        endTime2 = timestamp.add(parseInt(time.duration.minutes(45)))
-
-        const tx = await sportOracle.connect(deployer).updateSportEvents(
-            [eventId1, eventId2],
-            [startTime1, startTime2],
-            [endTime1, endTime2]
-        )
-
-        const eventTx  = await sportOracle.getEvents([eventId1, eventId2])
-
-        expect(eventTx[0].startTimestamp).to.be.equal(startTime1)
-        expect(eventTx[1].startTimestamp).to.be.equal(startTime2)
-    })
-
-    
-    it('Should only allow admin update sport events', async() => {
-
-        startTime1 = timestamp.add(parseInt(time.duration.minutes(10)))
-        endTime1 = timestamp.add(parseInt(time.duration.minutes(30)))
-        startTime2 = timestamp.add(parseInt(time.duration.minutes(5)))
-        endTime2 = timestamp.add(parseInt(time.duration.minutes(45)))
-
-        expect(sportOracle.connect(user).updateSportEvents(
-            [eventId1, eventId2],
-            [startTime1, startTime2],
-            [endTime1, endTime2]
-        )).to.be.reverted
-    })
-
-
-
-    it('Should only update sport event that is not live', async() => {
-
-        elapsedTime = 70*60
-
-        await ethers.provider.send('evm_increaseTime', [elapsedTime])
-        await ethers.provider.send('evm_mine')
-
-        startTime1 = timestamp.add(parseInt(time.duration.minutes(10)))
-        endTime1 = timestamp.add(parseInt(time.duration.minutes(30)))
-
-        expect(sportOracle.connect(deployer).updateSportEvents(
-            [eventId1],
-            [startTime1],
-            [endTime1]
-        )).to.be.reverted
-    })
-
-
-
-    it('Should only update sport event that has not ended', async() => {
-        await ethers.provider.send('evm_increaseTime', [elapsedTime])
-        await ethers.provider.send('evm_mine')
-
-        startTime1 = timestamp.add(parseInt(time.duration.minutes(10)))
-        endTime1 = timestamp.add(parseInt(time.duration.minutes(30)))
-
-        expect(sportOracle.connect(deployer).updateSportEvents(
-            [eventId1],
-            [startTime1],
-            [endTime1]
-        )).to.be.reverted
-    })
-
-
     it('Should cancel sport events', async() => {
 
         const tx = await sportOracle.connect(deployer).cancelSportEvents([eventId1, eventId2])
@@ -290,15 +219,6 @@ describe('SportOracle Contract Test', () => {
     it('Should only allow admin cancel sport events', async() => {
 
         expect(sportOracle.connect(user).cancelSportEvents([eventId1, eventId2]
-        )).to.be.reverted
-    })
-
-
-    it('Should only update sport event that is not cancelled', async() => {
-
-        await sportOracle.connect(deployer).cancelSportEvents([eventId1])
-
-        expect(sportOracle.connect(deployer).updateSportEvents([eventId1]
         )).to.be.reverted
     })
     
