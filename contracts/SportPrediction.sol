@@ -59,30 +59,24 @@ contract SportPrediction is
     */
     uint public maxPredictions;
 
-
-    /**
-    * @dev total predictions per event
-    */
-    mapping(bytes32 => uint) public eventIdsToPredictionAmount;
-
     /**
      *  @dev for any given event, get the prediction that have been made by a user for that event
      *  map composed of (event id => address of user => prediction ) pairs
      */
-    mapping(bytes32 => mapping(address => Prediction)) private eventToPrediction;
+    mapping(bytes32 => mapping(address => Prediction)) public eventToUserPrediction;
 
 
     /**
-     * @dev list of all predictions per player,
-     * ie. a map composed (player address => predictions) pairs
+     * @dev list of all eventIds predicted per user,
+     * ie. a map composed (player address => eventIds) pairs
      */
-    mapping(address => Prediction[]) private userToPredictions;
+    mapping(address => bytes32[]) private userToEvents;
 
 
     /**
-     *  @dev for any given event, get a list of all predictions that have been made for that event
+     *  @dev for any given event, get a list of all addresses that predicted for that event
      */
-    mapping(bytes32 => Prediction[]) private eventToPredictions;
+    mapping(bytes32 => address[]) private eventToUsers;
 
      /**
      * @dev payload of a prediction on a sport event
@@ -317,7 +311,7 @@ contract SportPrediction is
         // Make sure this sport event exists 
         require(sportOracle.eventExists(_eventId), "SportPrediction: Specified event not found");
 
-        Prediction memory userPrediction = eventToPrediction[_eventId][_user];
+        Prediction memory userPrediction = eventToUserPrediction[_eventId][_user];
         
         return userPrediction.predicted;
     }
@@ -335,7 +329,7 @@ contract SportPrediction is
         public nonReentrant
     {
 
-        require(eventIdsToPredictionAmount[_eventId] <= maxPredictions, "SportPrediction: Max prediction for event reached.");
+        require(eventToUsers[_eventId].length <= maxPredictions, "SportPrediction: Max prediction for event reached.");
 
         // Make sure game has not started or ended
         bytes32[] memory ids = new bytes32[](1);
@@ -361,17 +355,11 @@ contract SportPrediction is
                 false
             );
 
-        eventToPrediction[_eventId][msg.sender] = prediction;
+        eventToUserPrediction[_eventId][msg.sender] = prediction;
 
-        Prediction[] storage userPredictions = userToPredictions[msg.sender]; 
-        userPredictions.push(prediction);
+        userToEvents[msg.sender].push(_eventId); 
 
-        Prediction[] storage predictions = eventToPredictions[_eventId];
-        predictions.push(prediction);
-
-        
-
-        eventIdsToPredictionAmount[_eventId] += 1;
+        eventToUsers[_eventId].push(msg.sender);
 
         emit PredictionPlaced(
             _eventId,
@@ -397,7 +385,7 @@ contract SportPrediction is
         for (uint i = 0; i < _eventIds.length; i = i + 1 ) {
             // Require that event id exists
             require(sportOracle.eventExists(_eventIds[i]), "SportPrediction: Event does not exist"); 
-            output[i] = eventToPrediction[_eventIds[i]][_user];
+            output[i] = eventToUserPrediction[_eventIds[i]][_user];
         }
 
         return output;
@@ -413,10 +401,13 @@ contract SportPrediction is
         public
         view returns(Prediction[] memory)
     {
-        Prediction[] memory output = eventToPredictions[_eventId];
+        uint length = eventToUsers[_eventId].length;
+        Prediction[] memory output = new Prediction[](length);
+        for(uint i = 0; i < length; i++){
+            output[i] = eventToUserPrediction[_eventId][eventToUsers[_eventId][i]];
+        }
 
         return output;
-
     }
 
 
@@ -424,7 +415,13 @@ contract SportPrediction is
         public  
         view returns(Prediction[] memory)
     {
-        return userToPredictions[_user];
+        uint length = userToEvents[_user].length;
+        Prediction[] memory output = new Prediction[](length);
+        for(uint i = 0; i < length; i++){
+            output[i] = eventToUserPrediction[userToEvents[_user][i]][_user];
+        }
+        
+        return output;
     }
 
 
@@ -447,7 +444,7 @@ contract SportPrediction is
 
             // Require that event id exists
             require(sportOracle.eventExists(_eventIds[i]), "SportPrediction: Event does not exist"); 
-            Prediction memory userPrediction = eventToPrediction[_eventIds[i]][_user];
+            Prediction memory userPrediction = eventToUserPrediction[_eventIds[i]][_user];
             // Make sure user predict in specified event
             require(userPrediction.predicted,"SportPrediction: User did not predict on this event");
             
@@ -482,11 +479,11 @@ contract SportPrediction is
             bool cancelled = events[i].outcome == ISportPrediction.EventOutcome.Cancelled;
             require(predictStatuses[i] || cancelled,
                 "SportPrediction: Only winner can claim reward");
-            require(!eventToPrediction[_eventIds[i]][msg.sender].claimed,
+            require(!eventToUserPrediction[_eventIds[i]][msg.sender].claimed,
                 "SportPrediction: User has already claimed reward");
 
             
-            Prediction storage userPrediction = eventToPrediction[_eventIds[i]][msg.sender];
+            Prediction storage userPrediction = eventToUserPrediction[_eventIds[i]][msg.sender];
             userPrediction.claimed = true;
             uint reward = userPrediction.reward;
             if(cancelled){
