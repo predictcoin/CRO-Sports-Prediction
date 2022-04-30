@@ -30,6 +30,21 @@
       "address": "0xfc651d99929cb51758318723a71d66538a849017",
       "txHash": "0xade969efd51bbf096faa44dff8f6b1f38feeffb053bf59ce0685029cd7089a2b",
       "kind": "uups"
+    },
+    {
+      "address": "0x7Ac636e90959BD6bBEF3f5B4ecF4F6f5272620C9",
+      "txHash": "0xeea2c2376c515a28ec91dde4b3a563edfa202aec9f83bc5ceb1460aa0a511f09",
+      "kind": "uups"
+    },
+    {
+      "address": "0x58EEbc2960ed8E7Ce86888FB4F78BC572eB70d36",
+      "txHash": "0xa0522e6ab72d355957b2ecb8160f374a3a016f480743e40f8bfdf6a97eb430cd",
+      "kind": "uups"
+    },
+    {
+      "address": "0xC66091ba91A6Ae0Bfb1c21c422E8ebD95a131007",
+      "txHash": "0x7d7aba4d38d2936d2ce74dd610606047c6e03eab68076a1425f8a5c98886fd66",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -890,6 +905,425 @@
             "label": "mapping(bytes32 => uint256)"
           },
           "t_struct(Prediction)4806_storage": {
+            "label": "struct SportPrediction.Prediction",
+            "members": [
+              {
+                "label": "user",
+                "type": "t_address"
+              },
+              {
+                "label": "eventId",
+                "type": "t_bytes32"
+              },
+              {
+                "label": "amount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "reward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "teamAScore",
+                "type": "t_int8"
+              },
+              {
+                "label": "teamBScore",
+                "type": "t_int8"
+              },
+              {
+                "label": "predicted",
+                "type": "t_bool"
+              },
+              {
+                "label": "claimed",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          }
+        }
+      }
+    },
+    "d60bd44e238647629ed21c67fad368dc6722a109eedbeb842f12156f77346878": {
+      "address": "0x9dBe204D373Ec5726d5aD1f56Ba92Fa2F1Ff072C",
+      "txHash": "0xf699a7b2ed5afb64a2cb6e914cdf1ad151de5a98d3ff19c74466d9e6ad9ab31e",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "adminAddress",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_address",
+            "contract": "SportOracle",
+            "src": "contracts/SportOracle.sol:22"
+          },
+          {
+            "label": "events",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_struct(SportEvent)5863_storage)dyn_storage",
+            "contract": "SportOracle",
+            "src": "contracts/SportOracle.sol:27"
+          },
+          {
+            "label": "eventIdToIndex",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "contract": "SportOracle",
+            "src": "contracts/SportOracle.sol:32"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address"
+          },
+          "t_array(t_struct(SportEvent)5863_storage)dyn_storage": {
+            "label": "struct ISportPrediction.SportEvent[]"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_bytes_storage": {
+            "label": "bytes"
+          },
+          "t_enum(EventOutcome)5839": {
+            "label": "enum ISportPrediction.EventOutcome",
+            "members": [
+              "Pending",
+              "Decided",
+              "Cancelled"
+            ]
+          },
+          "t_int8": {
+            "label": "int8"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          },
+          "t_struct(SportEvent)5863_storage": {
+            "label": "struct ISportPrediction.SportEvent",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_bytes32"
+              },
+              {
+                "label": "teamA",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "teamB",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "league",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "round",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "startTimestamp",
+                "type": "t_uint256"
+              },
+              {
+                "label": "endTimestamp",
+                "type": "t_uint256"
+              },
+              {
+                "label": "outcome",
+                "type": "t_enum(EventOutcome)5839"
+              },
+              {
+                "label": "season",
+                "type": "t_uint16"
+              },
+              {
+                "label": "realTeamAScore",
+                "type": "t_int8"
+              },
+              {
+                "label": "realTeamBScore",
+                "type": "t_int8"
+              }
+            ]
+          },
+          "t_uint16": {
+            "label": "uint16"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          }
+        }
+      }
+    },
+    "f9d4f57b4d3546802b7e82a86e1f8068ef4871a7d4f7586e1a8f36dd6e6b0463": {
+      "address": "0x58c23c48ebFad3244cf310e56D11013295c8E22F",
+      "txHash": "0x034542786632927ead289aa28923b157f5781622603d5bf18e5001d8cbca1f90",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "crp",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_contract(IERC20Upgradeable)859",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:34"
+          },
+          {
+            "label": "sportOracle",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_contract(ISportPrediction)5921",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:39"
+          },
+          {
+            "label": "treasury",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_contract(ISportPredictionTreasury)5939",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:45"
+          },
+          {
+            "label": "predictAmount",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_uint256",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:50"
+          },
+          {
+            "label": "multiplier",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_uint256",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:55"
+          },
+          {
+            "label": "maxPredictions",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:60"
+          },
+          {
+            "label": "eventToUserPrediction",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_struct(Prediction)4716_storage))",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:66"
+          },
+          {
+            "label": "userToEvents",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_mapping(t_address,t_array(t_bytes32)dyn_storage)",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:73"
+          },
+          {
+            "label": "eventToUsers",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_mapping(t_bytes32,t_array(t_address)dyn_storage)",
+            "contract": "SportPrediction",
+            "src": "contracts/SportPrediction.sol:79"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_contract(IERC20Upgradeable)859": {
+            "label": "contract IERC20Upgradeable"
+          },
+          "t_contract(ISportPrediction)5921": {
+            "label": "contract ISportPrediction"
+          },
+          "t_contract(ISportPredictionTreasury)5939": {
+            "label": "contract ISportPredictionTreasury"
+          },
+          "t_int8": {
+            "label": "int8"
+          },
+          "t_mapping(t_address,t_array(t_bytes32)dyn_storage)": {
+            "label": "mapping(address => bytes32[])"
+          },
+          "t_mapping(t_address,t_struct(Prediction)4716_storage)": {
+            "label": "mapping(address => struct SportPrediction.Prediction)"
+          },
+          "t_mapping(t_bytes32,t_array(t_address)dyn_storage)": {
+            "label": "mapping(bytes32 => address[])"
+          },
+          "t_mapping(t_bytes32,t_mapping(t_address,t_struct(Prediction)4716_storage))": {
+            "label": "mapping(bytes32 => mapping(address => struct SportPrediction.Prediction))"
+          },
+          "t_struct(Prediction)4716_storage": {
             "label": "struct SportPrediction.Prediction",
             "members": [
               {

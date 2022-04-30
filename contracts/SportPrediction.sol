@@ -70,13 +70,13 @@ contract SportPrediction is
      * @dev list of all eventIds predicted per user,
      * ie. a map composed (player address => eventIds) pairs
      */
-    mapping(address => bytes32[]) private userToEvents;
+    mapping(address => bytes32[]) public userToEvents;
 
 
     /**
      *  @dev for any given event, get a list of all addresses that predicted for that event
      */
-    mapping(bytes32 => address[]) private eventToUsers;
+    mapping(bytes32 => address[]) public eventToUsers;
 
      /**
      * @dev payload of a prediction on a sport event
