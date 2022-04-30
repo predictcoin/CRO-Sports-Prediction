@@ -45,8 +45,8 @@ describe('SportPrediction Contract Test', () => {
         endTime1 = timestamp.add(parseInt(time.duration.hours(2)))
 
         eventId1 = ethers.utils.solidityKeccak256(
-            ["string", "string", "string", "string", "uint16"],
-            [teamA1, teamB1, league1, round1, season1]
+            ["string", "string", "string", "string", "uint16", "uint"],
+            [teamA1, teamB1, league1, round1, season1, startTime1]
         )
 
         teamA2  = "Juventus"
@@ -58,8 +58,8 @@ describe('SportPrediction Contract Test', () => {
         endTime2 = timestamp.add(parseInt(time.duration.hours(2)))
 
         eventId2 = ethers.utils.solidityKeccak256(
-            ["string", "string", "string", "string", "uint16"],
-            [teamA2, teamB2, league2, round2, season2]
+            ["string", "string", "string", "string", "uint16", "uint"],
+            [teamA2, teamB2, league2, round2, season2, startTime1]
         )
 
         await sportOracle.connect(deployer).addSportEvents(

@@ -147,7 +147,8 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
             _teamB,
             _league,
             _round,
-            _season
+            _season,
+            _startTimestamp
         ));
 
         // Make sure that the sport event is unique and does not exist yet
@@ -217,35 +218,6 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
 
         return eventIds;
     }
-
-
-    /**
-     * @notice Update sport events timestamps
-     * @param _eventIds event ids  for each sport event
-     * @param _startTimestamps stating times for each sport event
-     * @param _endTimestamps ending times for each sport event
-     */
-    function updateSportEvents(
-        bytes32[] memory _eventIds,
-        uint[] memory _startTimestamps,
-        uint[] memory _endTimestamps
-    ) external onlyAdmin {
-        for (uint8 i; i < _eventIds.length; i++){       
-            //get event
-            uint index = _getMatchIndex(_eventIds[i]);
-            ISportPrediction.SportEvent storage sportEvent = events[index];
-            // ensure event has not started or has ended
-            require(sportEvent.outcome == ISportPrediction.EventOutcome.Pending
-                && (sportEvent.startTimestamp >= block.timestamp ||
-                    sportEvent.endTimestamp <= block.timestamp),
-                "SportOracle: Event cant be updated"
-            );
-
-            sportEvent.endTimestamp = _endTimestamps[i];
-            sportEvent.startTimestamp = _startTimestamps[i];
-        }
-    }
-
 
     /**
      * @notice Cancel sport events
