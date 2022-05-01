@@ -234,8 +234,6 @@ contract SportOracle is ISportPrediction, Initializable, UUPSUpgradeable, Ownabl
                 "SportOracle: Event cant be cancelled"
             );
             sportEvent.outcome = ISportPrediction.EventOutcome.Cancelled;
-            sportEvent.startTimestamp = 0;
-            sportEvent.endTimestamp = 0;
             emit SportEventCancelled(_eventIds[i]);
         }
     }
