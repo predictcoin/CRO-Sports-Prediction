@@ -10,11 +10,8 @@ import "./interfaces/ISportPredictionTreasury.sol";
 contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
     using SafeERC20 for IERC20;
 
-    // other ERC20 token address
-    IERC20 internal token; 
-
     //sport prediction address
-    address internal sportPrediction;
+    address public sportPrediction;
 
     // Event triggered once an address withdraws from the contract
     event Withdraw(address indexed user, uint amount);
@@ -85,8 +82,7 @@ contract SportPredictionTreasury is AccessControl, ISportPredictionTreasury{
         public 
         override
         onlyAuthorized{
-        token = IERC20(_token);
-        token.safeTransfer(_to, _amount);
+        IERC20(_token).safeTransfer(_to, _amount);
         emit Withdraw(_to, _amount);
     }
 
