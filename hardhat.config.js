@@ -58,7 +58,7 @@ module.exports = {
       timeout: 150000,
     },
     cromainnet: {
-      url: "https://evm-cronos.crypto.org",
+      url: "https://mmf-rpc.xstaking.sg",
       chainId: 25,
       accounts: {
         mnemonic,
