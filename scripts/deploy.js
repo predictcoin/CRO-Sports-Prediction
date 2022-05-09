@@ -14,9 +14,9 @@ async function main() {
     [ sportOracle.address,
       treasury.address,
       crpToken,
-      ethers.utils.parseUnits("1"),
-      2,
-      3],
+      ethers.utils.parseUnits("100"),
+      10,
+      10],
       {kind: "uups"});
   
   await treasury.setSportPredictionAddress(sportPrediction.address);
