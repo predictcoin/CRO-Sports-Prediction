@@ -18,10 +18,11 @@ async function main() {
       2,
       3],
       {kind: "uups"});
-
+  
+  await treasury.setSportPredictionAddress(sportPrediction.address);
 
   console.log(`
-    SportOracle deployed to: ${sportOracle.address},
+    SportOracle deployed to: ${sportOracle.address},);
     SportPrediction: ${sportPrediction.address},
     SportPredictionTreasury: ${treasury.address}`);
 
