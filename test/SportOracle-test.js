@@ -84,7 +84,7 @@ describe('SportOracle Contract Test', () => {
         const startTime = timestamp.add(parseInt(time.duration.hours(1)))
         const endTime = timestamp.add(parseInt(time.duration.hours(2)))
 
-        const tx = await sportOracle.connect(deployer).addSportEvent(
+        const tx = await sportOracle.connect(deployer).callStatic.addSportEvent(
             teamA,
             teamB,
             league,
@@ -94,15 +94,12 @@ describe('SportOracle Contract Test', () => {
             season
         )
 
-        const receipt = await tx.wait()
-
         const expectedEventId = ethers.utils.solidityKeccak256(
             ["string", "string", "string", "string", "uint16", "uint"],
             [teamA, teamB, league, round, season, startTime]
         )
 
-        const actualEventId = receipt.events[0].args[0]
-        expect(actualEventId).to.equal(expectedEventId)
+        expect(tx).to.equal(expectedEventId)
     })
     
 
@@ -154,7 +151,7 @@ describe('SportOracle Contract Test', () => {
             ["string", "string", "string", "string", "uint16", "uint"],
             [teamA2, teamB2, league2, round2, season2, startTime1]
         )
-        const tx = await sportOracle.connect(deployer).addSportEvents(
+        const tx = await sportOracle.connect(deployer).callStatic.addSportEvents(
             [teamA1, teamA2],
             [teamB1, teamB2],
             [league1, league2],
@@ -164,13 +161,8 @@ describe('SportOracle Contract Test', () => {
             [season1, season2],
         )
 
-        const receipt = await tx.wait()
-
-        const actualEventId1 = receipt.events[0].args[0]
-        const actualEventId2 = receipt.events[1].args[0]
-
-        expect(actualEventId1).to.equal(expectedEventId1)
-        expect(actualEventId2).to.equal(expectedEventId2)
+        expect(tx[0]).to.equal(expectedEventId1)
+        expect(tx[1]).to.equal(expectedEventId2)
 
     })
 

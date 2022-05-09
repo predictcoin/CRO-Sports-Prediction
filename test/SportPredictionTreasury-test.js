@@ -56,10 +56,7 @@ describe('SportPrediction Treasury Contract Test', () => {
 
         const tx = await treasury.withdraw(amount)
         const contractBalance = await provider.getBalance(treasury.address)
-        const receipt  = await tx.wait()
         expect(contractBalance).to.equal(ethers.BigNumber.from(0))
-        expect(receipt.events[0].args[0]).to.equal(await deployer.getAddress())
-        expect(receipt.events[0].args[1]).to.equal(amount)
     })
 
 
@@ -80,10 +77,7 @@ describe('SportPrediction Treasury Contract Test', () => {
         await token.approve(user.getAddress(), amount)
         const tx = await treasury.withdrawToken(token.address, user.getAddress(), amount)
         const userBalance = await token.balanceOf(user.getAddress())
-        const receipt  = await tx.wait()
         expect(userBalance).to.equal(amount)
-        expect(receipt.events[1].args[0]).to.equal(await user.getAddress())
-        expect(receipt.events[1].args[1]).to.equal(amount)
     })
 
 
