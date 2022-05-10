@@ -8,7 +8,7 @@ describe('SportPrediction Treasury Contract Test', () => {
     let token, treasury, deployer, user, provider, sportPrediction
 
     beforeEach(async () => {
-        [deployer, user] = await ethers.getSigners()
+        [deployer, user] = await ethers.getSigners()       
         provider = waffle.provider;
         const adminAddress = process.env.ADMIN_ADDRESS
         const CRPToken = await ethers.getContractFactory("CRP")
@@ -73,11 +73,11 @@ describe('SportPrediction Treasury Contract Test', () => {
         const amount = ethers.utils.parseUnits("50")
         await token.approve(treasury.address, amount)
         await token.transfer(treasury.address, amount)
-
         await token.approve(user.getAddress(), amount)
+
+        expect(await token.balanceOf(user.getAddress())).to.equal(0)
         const tx = await treasury.withdrawToken(token.address, user.getAddress(), amount)
-        const userBalance = await token.balanceOf(user.getAddress())
-        expect(userBalance).to.equal(amount)
+        expect(await token.balanceOf(user.getAddress())).to.equal(amount)
     })
 
 
