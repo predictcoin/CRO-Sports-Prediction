@@ -84,7 +84,7 @@ describe('SportOracle Contract Test', () => {
         const startTime = timestamp.add(parseInt(time.duration.hours(1)))
         const endTime = timestamp.add(parseInt(time.duration.hours(2)))
 
-        const tx = await sportOracle.connect(deployer).callStatic.addSportEvent(
+        const tx = await sportOracle.connect(deployer).addSportEvent(
             teamA,
             teamB,
             league,
@@ -98,8 +98,7 @@ describe('SportOracle Contract Test', () => {
             ["string", "string", "string", "string", "uint16", "uint"],
             [teamA, teamB, league, round, season, startTime]
         )
-
-        expect(tx).to.equal(expectedEventId)
+        expect(await sportOracle.eventExists(expectedEventId)).to.be.true
     })
     
 
